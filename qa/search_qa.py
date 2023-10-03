@@ -2,8 +2,10 @@
 """
 from typing import Any, Optional, Type
 
-from langchain.callbacks.manager import (AsyncCallbackManagerForToolRun,
-                                         CallbackManagerForToolRun)
+from langchain.callbacks.manager import (
+    AsyncCallbackManagerForToolRun,
+    CallbackManagerForToolRun,
+)
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.indexes import VectorstoreIndexCreator
 from langchain.tools import BaseTool

@@ -1,11 +1,14 @@
 """Tool for load HTML files and QA."""
 import asyncio
+
 # from playwright import Page, Frame
 import logging
 from typing import Any, List, Optional, Type
 
-from langchain.callbacks.manager import (AsyncCallbackManagerForToolRun,
-                                         CallbackManagerForToolRun)
+from langchain.callbacks.manager import (
+    AsyncCallbackManagerForToolRun,
+    CallbackManagerForToolRun,
+)
 from langchain.chains.question_answering import load_qa_chain
 from langchain.docstore.document import Document
 from langchain.document_loaders.base import BaseLoader
