@@ -67,7 +67,7 @@ jobs:
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
           --set serpapiApiKey=${{ secrets.SERPAPI_API_KEY }} \
           --set pineconeApiKey=${{ secrets.PINECONE_API_KEY }} \
-          --set pineconeEnv=${{ secrets.PINECONE_ENV }} \
+          --set pineconeEnv="us-west4-gcp-free" \
           --set slackBotToken=${{ secrets.SLACK_BOT_TOKEN }} \
           --set slackAppToken=${{ secrets.SLACK_APP_TOKEN }} \
           --set pineconeIndex="libre"
