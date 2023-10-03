@@ -7,10 +7,9 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GKE_CLUSTER: discord-bots
+  GKE_CLUSTER: slack-bots
   GKE_ZONE: us-central1
-  IMAGE: alola-discord-gpt-bot
-  NAMESPACE: main
+  IMAGE: slack-bot
 
 jobs:
   setup-build-publish-deploy:
@@ -30,21 +29,11 @@ jobs:
         credentials_json: ${{ secrets.GKE_SA_KEY }}
 
     # Setup gcloud CLI
-    - uses: google-github-actions/setup-gcloud@1bee7de035d65ec5da40a31f8589e240eba8fde5
-      with:
-        project_id: ${{ secrets.GKE_PROJECT }}
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
 
-    # Configure Docker to use the gcloud command-line tool as a credential
-    # helper for authentication
-    - run: |-
-        gcloud --quiet auth configure-docker
-
-    # Get the GKE credentials so we can deploy to the cluster
-    - uses: google-github-actions/get-gke-credentials@db150f2cc60d1716e61922b832eae71d2a45938f
-      with:
-        cluster_name: ${{ env.GKE_CLUSTER }}
-        location: ${{ env.GKE_ZONE }}
-        project_id: ${{ secrets.GKE_PROJECT }}
+    - name: Configure Docker to use gcloud command-line tool as a credential helper
+      run: gcloud auth configure-docker
 
     # Build the Docker image
     - name: Build
@@ -60,12 +49,26 @@ jobs:
       run: |-
         docker push "gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA"
 
+    # Get the GKE credentials so we can deploy to the cluster
+    - name: Get GKE credentials
+      uses: google-github-actions/get-gke-credentials@v1
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_ZONE }}
+
     # Deploy the Docker image to the GKE cluster
     - name: Deploy bot
       run: |-
-        helm upgrade alola-discord-gpt-bot ./charts/discord-gpt-bot \
+        helm upgrade slack-bot ./charts/bot \
           --install \
-          --namespace $NAMESPACE \
-          --create-namespace \
-          --set image=gcr.io/PROJECT_ID/IMAGE:TAG=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA
+          --atomic \
+          --wait \
+          --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
+          --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
+          --set serpapiApiKey=${{ secrets.SERPAPI_API_KEY }} \
+          --set pineconeApiKey=${{ secrets.PINECONE_API_KEY }} \
+          --set pineconeEnv=${{ secrets.PINECONE_ENV }} \
+          --set slackBotToken=${{ secrets.SLACK_BOT_TOKEN }} \
+          --set slackAppToken=${{ secrets.SLACK_APP_TOKEN }} \
+          --set pineconeIndex="libre"
         kubectl get services -o wide

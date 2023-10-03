@@ -1,0 +1,2 @@
+- Application URL: http://{{ .Values.appHost }}
+- Namespace: {{ .Release.Namespace }}
