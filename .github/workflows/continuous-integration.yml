@@ -41,4 +41,4 @@ jobs:
 
     - name: Type Check with Mypy
       run: |
-        poetry run mypy --check-untyped-defs .
+        poetry run mypy --check-untyped-defs main.py

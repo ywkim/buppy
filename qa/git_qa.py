@@ -86,13 +86,4 @@ class GitQA(BaseTool):
         run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
     ) -> str:
         """Use the tool asynchronously."""
-        search_query = f"site:wikipedia.org {question}"  # Modify search query as needed
-        search_results = await self.requests_tool.arun(
-            url=f"https://www.google.com/search?q={search_query}"
-        )
-        # Process search_results and extract relevant information for answering the question
-        # Perform question answering using the extracted information
-        answer = "Sample answer"  # Replace with actual answer
-        return answer
-
-        return await self.requests_wrapper.aget(_clean_url(url))
+        return ""

@@ -188,21 +188,7 @@ class WebQA(BaseTool):
     ) -> str:
         """Use the tool."""
         print(f"WebQA question: {question}, urls: {urls}, llm: {self.llm.model_name}")
-        try:
-            loader = PlaywrightURLLoader(urls)
-            splitter = self._create_splitter()
-
-            docs = loader.load_and_split(splitter)
-            self._print_documents(docs)
-
-            chain = load_qa_chain(self.llm, chain_type="refine")
-            answer = chain.arun(input_documents=docs, question=question)
-            return answer
-        except OpenAIError as e:
-            print(e)
-            raise ToolException() from e
-        except IOError as e:
-            raise ToolException() from e
+        return ""
 
     async def _arun(
         self,

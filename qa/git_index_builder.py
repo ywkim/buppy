@@ -7,12 +7,12 @@ import time
 import uuid
 
 from git import Repo
+from index_builder import IndexBuilder
 from langchain.document_loaders import GitLoader
 from langchain.vectorstores import Chroma
 from openai.error import APIError, RateLimitError
 from tqdm.auto import tqdm
 
-from index_builder import IndexBuilder
 from main import DEFAULT_CONFIG
 
 logger = logging.getLogger(__name__)
