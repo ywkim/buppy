@@ -4,14 +4,14 @@ import hashlib
 import logging
 import uuid
 
+from index_builder import IndexBuilder
 from langchain.document_loaders import PyPDFLoader
 from langchain.llms import OpenAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
-
-from index_builder import IndexBuilder
-from main import DEFAULT_CONFIG
 from utils import get_max_tokens
+
+from main import DEFAULT_CONFIG
 
 logger = logging.getLogger(__name__)
 

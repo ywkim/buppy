@@ -5,10 +5,8 @@ from typing import Any, List, Optional, Type
 
 import pinecone
 from git.exc import GitError
-from langchain.callbacks.manager import (
-    AsyncCallbackManagerForToolRun,
-    CallbackManagerForToolRun,
-)
+from langchain.callbacks.manager import (AsyncCallbackManagerForToolRun,
+                                         CallbackManagerForToolRun)
 from langchain.chains import RetrievalQA
 from langchain.document_loaders import GitLoader, WebBaseLoader
 from langchain.indexes import VectorstoreIndexCreator
