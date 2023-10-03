@@ -123,10 +123,8 @@ def register_events_and_commands(
     async def handle_mention_events(body, say, logger):
         event = body["event"]
         thread_ts = event.get("thread_ts", None) or event["ts"]
-        user = body["message"]["user"]
-        message_text = body["message"]["text"].replace(
-            f"<@{body['authorizations'][0]['user_id']}> ", ""
-        )
+        user = event["user"]
+        message_text = event["text"].replace(f"<@{body['authorizations'][0]['user_id']}>", "").strip()
 
         logger.info(f"Received a question from {user}: {message_text}")
 
