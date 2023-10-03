@@ -3,6 +3,7 @@ import asyncio
 import configparser
 import json
 import logging
+import os
 
 import pinecone
 from langchain.agents import AgentExecutor, AgentType, initialize_agent
@@ -33,13 +34,52 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-
-def load_config(config_file: str) -> configparser.ConfigParser:
+def load_config_from_file(config_file: str) -> configparser.ConfigParser:
     config = configparser.ConfigParser()
     config.read_dict(DEFAULT_CONFIG)
     config.read(config_file)
     return config
 
+def load_config_from_env_vars():
+    config = {
+        "api": {
+            "openai_api_key": os.environ.get("OPENAI_API_KEY"),
+            "serpapi_api_key": os.environ.get("SERPAPI_API_KEY"),
+            "pinecone_api_key": os.environ.get("PINECONE_API_KEY"),
+            "pinecone_env": os.environ.get("PINECONE_ENV"),
+            "slack_bot_token": os.environ.get("SLACK_BOT_TOKEN"),
+            "slack_app_token": os.environ.get("SLACK_APP_TOKEN"),
+        },
+        "settings": {
+            "chat_model": os.environ.get(
+                "CHAT_MODEL", DEFAULT_CONFIG["settings"]["chat_model"]
+            ),
+            "system_prompt": os.environ.get(
+                "SYSTEM_PROMPT", DEFAULT_CONFIG["settings"]["system_prompt"]
+            ),
+            "temperature": os.environ.get(
+                "TEMPERATURE", DEFAULT_CONFIG["settings"]["temperature"]
+            ),
+            "pinecone_index": os.environ.get("PINECONE_INDEX"),
+        },
+    }
+    config = configparser.ConfigParser()
+    config.read_dict(config)
+    return config
+
+def load_config(config_file: str = None) -> configparser.ConfigParser:
+    """Load configuration from a given file and fall back to environment variables if the file does not exist."""
+    if config_file:
+        if os.path.exists(config_file):
+            return load_config_from_file(config_file)
+        else:
+            raise FileNotFoundError(f"Config file {config_file} does not exist.")
+
+    if os.path.exists("config.ini"):
+        return load_config_from_file("config.ini")
+
+    # If no config file provided, load config from environment variables
+    return load_config_from_env_vars()
 
 def load_tools(config: configparser.ConfigParser):
     llm = ChatOpenAI(
@@ -141,8 +181,7 @@ async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config_file",
-        default="config.ini",
-        help="Path to the configuration file.",
+        help="Path to the configuration file. If no path is provided, will try to load from `config.ini` and environmental variables.",
     )
     parser.add_argument(
         "--message_file",
@@ -155,8 +194,12 @@ async def main():
     if args.message_file is not None:
         await process_messages_from_file(args.message_file, config)
     else:
-        slack_bot_token = config.get("api", "slack_bot_token")
-        slack_app_token = config.get("api", "slack_app_token")
+        try:
+            slack_bot_token = config.get("api", "slack_bot_token")
+            slack_app_token = config.get("api", "slack_app_token")
+        except configparser.NoOptionError as e:
+            logging.error("Configuration error: %s. Please provide the required api keys either in a config file or as environment variables.", e)
+            raise SystemExit
 
         logging.info("Initializing AsyncApp and SocketModeHandler")
         app = AsyncApp(token=slack_bot_token)
