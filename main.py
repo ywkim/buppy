@@ -8,7 +8,6 @@ import pinecone
 from langchain.agents import AgentExecutor, AgentType, initialize_agent
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.llms import OpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import MessagesPlaceholder
 from langchain.schema import SystemMessage
