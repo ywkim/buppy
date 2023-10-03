@@ -45,11 +45,11 @@ def load_tools(config: configparser.ConfigParser):
         model=config.get("settings", "chat_model"),
         temperature=0,
         openai_api_key=config.get("api", "openai_api_key"),
-    )
-    serp = SerpAPIWrapper(serpapi_api_key=config.get("api", "serpapi_api_key"))
+    )  # type: ignore
+    serp = SerpAPIWrapper(serpapi_api_key=config.get("api", "serpapi_api_key"))  # type: ignore
     embeddings = OpenAIEmbeddings(
         openai_api_key=config.get("api", "openai_api_key"), disallowed_special=()
-    )
+    )  # type: ignore
     pinecone_index = config.get("settings", "pinecone_index")
     pinecone.init(
         api_key=config.get("api", "pinecone_api_key"),
@@ -84,7 +84,7 @@ def init_agent_with_tools(config: configparser.ConfigParser) -> AgentExecutor:
         model=config.get("settings", "chat_model"),
         temperature=float(config.get("settings", "temperature")),
         openai_api_key=config.get("api", "openai_api_key"),
-    )
+    )  # type: ignore
     tools = load_tools(config)
     agent = initialize_agent(
         tools,

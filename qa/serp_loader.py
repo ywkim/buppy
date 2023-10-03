@@ -19,7 +19,7 @@ class SerpAPILoader(BaseLoader):
         self.serp = serp
 
     @staticmethod
-    def _process_response(res: dict) -> Union[dict, List[Any]]:
+    def _process_response(res: dict) -> Union[dict, List[Any], str]:
         """Process response from SerpAPI."""
         if "error" in res:
             raise ValueError(f"Got error from SerpAPI: {res['error']}")
