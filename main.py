@@ -71,8 +71,7 @@ def load_config(config_file: str = None) -> configparser.ConfigParser:
     if config_file:
         if os.path.exists(config_file):
             return load_config_from_file(config_file)
-        else:
-            raise FileNotFoundError(f"Config file {config_file} does not exist.")
+        raise FileNotFoundError(f"Config file {config_file} does not exist.")
 
     if os.path.exists("config.ini"):
         return load_config_from_file("config.ini")
@@ -198,7 +197,7 @@ async def main():
             slack_app_token = config.get("api", "slack_app_token")
         except configparser.NoOptionError as e:
             logging.error("Configuration error: %s. Please provide the required api keys either in a config file or as environment variables.", e)
-            raise SystemExit
+            raise SystemExit from e
 
         logging.info("Initializing AsyncApp and SocketModeHandler")
         app = AsyncApp(token=slack_bot_token)
