@@ -33,11 +33,13 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+
 def load_config_from_file(config_file: str) -> configparser.ConfigParser:
     config = configparser.ConfigParser()
     config.read_dict(DEFAULT_CONFIG)
     config.read(config_file)
     return config
+
 
 def load_config_from_env_vars():
     env_config = {
@@ -66,6 +68,7 @@ def load_config_from_env_vars():
     config.read_dict(env_config)
     return config
 
+
 def load_config(config_file: str = None) -> configparser.ConfigParser:
     """Load configuration from a given file and fall back to environment variables if the file does not exist."""
     if config_file:
@@ -78,6 +81,7 @@ def load_config(config_file: str = None) -> configparser.ConfigParser:
 
     # If no config file provided, load config from environment variables
     return load_config_from_env_vars()
+
 
 def load_tools(config: configparser.ConfigParser):
     llm = ChatOpenAI(
@@ -196,7 +200,10 @@ async def main():
             slack_bot_token = config.get("api", "slack_bot_token")
             slack_app_token = config.get("api", "slack_app_token")
         except configparser.NoOptionError as e:
-            logging.error("Configuration error: %s. Please provide the required api keys either in a config file or as environment variables.", e)
+            logging.error(
+                "Configuration error: %s. Please provide the required api keys either in a config file or as environment variables.",
+                e,
+            )
             raise SystemExit from e
 
         logging.info("Initializing AsyncApp and SocketModeHandler")
