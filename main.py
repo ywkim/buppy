@@ -4,7 +4,6 @@ import configparser
 import json
 import logging
 import os
-from typing import Optional
 
 import pinecone
 from langchain.agents import AgentExecutor, AgentType, initialize_agent
@@ -70,7 +69,7 @@ def load_config_from_env_vars():
     return config
 
 
-def load_config(config_file: Optional[str] = None) -> configparser.ConfigParser:
+def load_config(config_file: (str | None) = None) -> configparser.ConfigParser:
     """Load configuration from a given file and fall back to environment variables if the file does not exist."""
     if config_file:
         if os.path.exists(config_file):
