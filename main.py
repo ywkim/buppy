@@ -124,7 +124,11 @@ def register_events_and_commands(
         event = body["event"]
         thread_ts = event.get("thread_ts", None) or event["ts"]
         user = event["user"]
-        message_text = event["text"].replace(f"<@{body['authorizations'][0]['user_id']}>", "").strip()
+        message_text = (
+            event["text"]
+            .replace(f"<@{body['authorizations'][0]['user_id']}>", "")
+            .strip()
+        )
 
         logger.info(f"Received a question from {user}: {message_text}")
 
