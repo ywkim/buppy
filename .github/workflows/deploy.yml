@@ -8,7 +8,7 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GKE_CLUSTER: slack-bots
+  GKE_CLUSTER: discord-bots
   GKE_ZONE: us-central1
   IMAGE: slack-bot
 
