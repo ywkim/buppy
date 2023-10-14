@@ -164,7 +164,7 @@ def register_events_and_commands(
         logger.info(body)
 
     @app.event("app_mention")
-    async def handle_mention_events(body, message, client: WebClient, say, logger):
+    async def handle_mention_events(body, client, say, logger):
         event = body["event"]
         channel_id = event["channel"]
         ts = event["ts"]
