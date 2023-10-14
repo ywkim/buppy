@@ -175,9 +175,15 @@ def register_events_and_commands(
         )
 
         logger.info(f"Received a question from {user}: {message_text}")
-
-        answer = await ask_question_to_agent(message_text, config)
-        await say(text=answer, thread_ts=thread_ts)
+        try:
+            answer = await ask_question_to_agent(message_text, config)
+            await say(text=answer, thread_ts=thread_ts)
+        except Exception:  # pylint: disable=broad-except
+            logger.error("Error handling app_mention event: ", exc_info=True)
+            await say(
+                text="Sorry, I encountered a problem while trying to process your request. The engineering team has been notified.",
+                thread_ts=thread_ts,
+            )
 
 
 async def ask_question_to_agent(message: str, config):
