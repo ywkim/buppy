@@ -164,9 +164,11 @@ def register_events_and_commands(
         logger.info(body)
 
     @app.event("app_mention")
-    async def handle_mention_events(body, say, logger):
+    async def handle_mention_events(body, message, client: WebClient, say, logger):
         event = body["event"]
-        thread_ts = event.get("thread_ts", None) or event["ts"]
+        channel_id = event["channel"]
+        ts = event["ts"]
+        thread_ts = event.get("thread_ts", None) or ts
         user = event["user"]
         message_text = (
             event["text"]
@@ -175,6 +177,14 @@ def register_events_and_commands(
         )
 
         logger.info(f"Received a question from {user}: {message_text}")
+
+        # Acknowledge the incoming message with 'eyes' emoji
+        reaction = await client.reactions_add(
+            name="eyes", channel=channel_id, timestamp=ts
+        )
+
+        logger.info(f"Added reaction to the message: {reaction}")
+
         try:
             answer = await ask_question_to_agent(message_text, config)
             await say(text=answer, thread_ts=thread_ts)
@@ -184,6 +194,11 @@ def register_events_and_commands(
                 text="Sorry, I encountered a problem while trying to process your request. The engineering team has been notified.",
                 thread_ts=thread_ts,
             )
+
+        response = await client.reactions_remove(
+            name="eyes", channel=channel_id, timestamp=ts
+        )
+        logger.info(f"Remove reaction to the message: {response}")
 
 
 async def ask_question_to_agent(message: str, config):
