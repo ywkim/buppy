@@ -6,7 +6,7 @@ import configparser
 import json
 import logging
 import os
-from typing import Any, Dict
+from typing import Any
 
 from langchain.agents import AgentExecutor, AgentType, initialize_agent
 from langchain.chat_models import ChatOpenAI
@@ -41,7 +41,7 @@ def load_config_from_file(config_file: str) -> configparser.ConfigParser:
 
 
 def load_config_from_env_vars():
-    env_config: Dict[str, Dict[str, Any]] = {
+    env_config: dict[str, dict[str, Any]] = {
         "api": {
             "openai_api_key": os.environ.get("OPENAI_API_KEY"),
             "serpapi_api_key": os.environ.get("SERPAPI_API_KEY"),
