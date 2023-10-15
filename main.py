@@ -148,7 +148,7 @@ def format_messages(
         for i in range(len(thread_messages) - 1)
     ), "Messages are not sorted in ascending order."
 
-    formatted_messages = []
+    formatted_messages: list[BaseMessage] = []
 
     for msg in thread_messages:
         role = "assistant" if msg.get("user") == bot_user_id else "user"
