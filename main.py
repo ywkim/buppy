@@ -7,17 +7,10 @@ import logging
 import os
 from typing import Any
 
-from langchain.agents import AgentExecutor, AgentType, initialize_agent
 from langchain.chat_models import ChatOpenAI
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.memory import ConversationBufferMemory
-from langchain.prompts import MessagesPlaceholder
-from langchain.schema import SystemMessage
-from langchain.utilities import SerpAPIWrapper
+from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
-
-from qa.search_qa import SearchQA
 
 DEFAULT_CONFIG = {
     "settings": {
@@ -78,78 +71,38 @@ def load_config(config_file: (str | None) = None) -> configparser.ConfigParser:
     return load_config_from_env_vars()
 
 
-def load_tools(config: configparser.ConfigParser):
-    llm = ChatOpenAI(
-        model=config.get("settings", "chat_model"),
-        temperature=0,
-        openai_api_key=config.get("api", "openai_api_key"),
-    )  # type: ignore
-    serp = SerpAPIWrapper(serpapi_api_key=config.get("api", "serpapi_api_key"))  # type: ignore
-    embeddings = OpenAIEmbeddings(
-        openai_api_key=config.get("api", "openai_api_key"), disallowed_special=()
-    )  # type: ignore
-    return [
-        SearchQA(llm=llm, serp=serp, embeddings=embeddings),
-    ]
-
-
-def init_agent_with_tools(config: configparser.ConfigParser) -> AgentExecutor:
-    system_prompt = SystemMessage(content=config.get("settings", "system_prompt"))
-    agent_kwargs = {
-        "extra_prompt_messages": [MessagesPlaceholder(variable_name="memory")],
-        "system_message": system_prompt,
-    }
-    memory = ConversationBufferMemory(memory_key="memory", return_messages=True)
+def init_chat_model(config: configparser.ConfigParser) -> ChatOpenAI:
+    """Initialize the langchain chat model."""
     chat = ChatOpenAI(
         model=config.get("settings", "chat_model"),
         temperature=float(config.get("settings", "temperature")),
         openai_api_key=config.get("api", "openai_api_key"),
     )  # type: ignore
-    tools = load_tools(config)
-    agent = initialize_agent(
-        tools,
-        chat,
-        agent=AgentType.OPENAI_FUNCTIONS,
-        verbose=True,
-        agent_kwargs=agent_kwargs,
-        memory=memory,
-    )
-    return agent
+    return chat
 
 
 def register_events_and_commands(
     app: AsyncApp, config: configparser.ConfigParser
 ) -> None:
-    @app.command("/ask")
-    async def handle_command(ack, body, say):
-        # Acknowledge the command request right away
-        await ack()
-        # Provide an immediate response to indicate the question is being processed
-        await say("Processing your question, please wait...")
-
-        question = body.get("text", "")
-        logging.info("Received a question: %s", question)
-        response = await ask_question_to_agent(question, config)
-        logging.info("Generated response: %s", response)
-        # include the question in the reply
-        await say(f"Question: {question}\nAnswer: {response}")
-
     @app.event("message")
     async def handle_message_events(body, logger):
         logger.info(body)
 
     @app.event("app_mention")
-    async def handle_mention_events(body, client, say, logger):
+    async def handle_mention_events(
+        body: dict[str, Any], client, say, logger: logging.Logger
+    ):
+        """
+        Handle events where the bot is mentioned. Fetch the thread messages, format them and call the Chat API to get a response.
+        Then send the response to the thread.
+        """
         event = body["event"]
         channel_id = event["channel"]
         ts = event["ts"]
         thread_ts = event.get("thread_ts", None) or ts
         user = event["user"]
-        message_text = (
-            event["text"]
-            .replace(f"<@{body['authorizations'][0]['user_id']}>", "")
-            .strip()
-        )
+        bot_user_id = body["authorizations"][0]["user_id"]
+        message_text = event["text"].replace(f"<@{bot_user_id}>", "").strip()
 
         logger.info(f"Received a question from {user}: {message_text}")
 
@@ -157,12 +110,19 @@ def register_events_and_commands(
         reaction = await client.reactions_add(
             name="eyes", channel=channel_id, timestamp=ts
         )
-
         logger.info(f"Added reaction to the message: {reaction}")
 
         try:
-            answer = await ask_question_to_agent(message_text, config)
-            await say(text=answer, thread_ts=thread_ts)
+            thread_messages_response = await client.conversations_replies(
+                channel=channel_id, ts=thread_ts
+            )
+            thread_messages = thread_messages_response.get("messages", [])
+
+            formatted_messages = format_messages(thread_messages, bot_user_id)
+            logger.info(f"Sending {formatted_messages} messages to OpenAI API")
+            response_message = await ask_question(formatted_messages, config)
+            logger.info(f"Received {response_message} from OpenAI API")
+            await say(text=response_message, thread_ts=thread_ts)
         except Exception:  # pylint: disable=broad-except
             logger.error("Error handling app_mention event: ", exc_info=True)
             await say(
@@ -176,11 +136,41 @@ def register_events_and_commands(
         logger.info(f"Remove reaction to the message: {response}")
 
 
-async def ask_question_to_agent(message: str, config):
-    """Pass the message to the agent and get an answer."""
-    agent = init_agent_with_tools(config)
-    response_message = await agent.arun(message)
-    return response_message
+def format_messages(
+    thread_messages: list[dict[str, Any]], bot_user_id: str
+) -> list[BaseMessage]:
+    """
+    Format messages in a thread. Messages from the bot (designated by bot_user_id)
+    are considered as messages from the 'assistant' and everything else as from the 'user'.
+    """
+    # Check if the messages are sorted in ascending order by 'ts'
+    assert all(
+        thread_messages[i]["ts"] <= thread_messages[i + 1]["ts"]
+        for i in range(len(thread_messages) - 1)
+    ), "Messages are not sorted in ascending order."
+
+    formatted_messages = []
+
+    for msg in thread_messages:
+        role = "assistant" if msg.get("user") == bot_user_id else "user"
+        content = msg["text"]
+        if role == "user":
+            content = content.replace(f"<@{bot_user_id}>", "").strip()
+            formatted_messages.append(HumanMessage(content=content))
+        else:
+            formatted_messages.append(AIMessage(content=content))
+
+    return formatted_messages
+
+
+async def ask_question(formatted_messages: list[BaseMessage], config) -> str:
+    """
+    Pass the formatted_messages to the Chat API and return the response content.
+    """
+    system_prompt = SystemMessage(content=config.get("settings", "system_prompt"))
+    chat = init_chat_model(config)
+    resp = await chat.agenerate([[system_prompt, *formatted_messages]])
+    return resp.generations[0][0].text
 
 
 async def main():

@@ -38,7 +38,6 @@ poetry install
 ```
 [api]
 openai_api_key = "OPEN_AI_API_KEY_VALUE"
-serpapi_api_key = "SERP_API_KEY_VALUE"
 slack_bot_token = "SLACK_BOT_TOKEN_VALUE"
 slack_app_token = "SLACK_APP_TOKEN_VALUE"
 
