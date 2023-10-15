@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import configparser
-import json
 import logging
 import os
 from typing import Any
@@ -184,15 +183,6 @@ async def ask_question_to_agent(message: str, config):
     return response_message
 
 
-async def process_messages_from_file(file_path, config):
-    agent = init_agent_with_tools(config)
-    with open(file_path, "r", encoding="utf-8") as message_file:
-        messages = json.load(message_file)
-        for message in messages:
-            response_message = await agent.arun(message)
-            print(response_message)
-
-
 async def main():
     logging.info("Starting bot")
 
@@ -201,36 +191,29 @@ async def main():
         "--config_file",
         help="Path to the configuration file. If no path is provided, will try to load from `config.ini` and environmental variables.",
     )
-    parser.add_argument(
-        "--message_file",
-        help="Path to a JSON file containing messages to process.",
-    )
     args = parser.parse_args()
 
     config = load_config(args.config_file)
 
-    if args.message_file is not None:
-        await process_messages_from_file(args.message_file, config)
-    else:
-        try:
-            slack_bot_token = config.get("api", "slack_bot_token")
-            slack_app_token = config.get("api", "slack_app_token")
-        except configparser.NoOptionError as e:
-            logging.error(
-                "Configuration error: %s. Please provide the required api keys either in a config file or as environment variables.",
-                e,
-            )
-            raise SystemExit from e
+    try:
+        slack_bot_token = config.get("api", "slack_bot_token")
+        slack_app_token = config.get("api", "slack_app_token")
+    except configparser.NoOptionError as e:
+        logging.error(
+            "Configuration error: %s. Please provide the required api keys either in a config file or as environment variables.",
+            e,
+        )
+        raise SystemExit from e
 
-        logging.info("Initializing AsyncApp and SocketModeHandler")
-        app = AsyncApp(token=slack_bot_token)
-        handler = AsyncSocketModeHandler(app, slack_app_token)
+    logging.info("Initializing AsyncApp and SocketModeHandler")
+    app = AsyncApp(token=slack_bot_token)
+    handler = AsyncSocketModeHandler(app, slack_app_token)
 
-        logging.info("Registering event and command handlers")
-        register_events_and_commands(app, config)
+    logging.info("Registering event and command handlers")
+    register_events_and_commands(app, config)
 
-        logging.info("Starting SocketModeHandler")
-        await handler.start_async()
+    logging.info("Starting SocketModeHandler")
+    await handler.start_async()
 
 
 if __name__ == "__main__":
