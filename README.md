@@ -43,9 +43,9 @@ slack_bot_token = "SLACK_BOT_TOKEN_VALUE"
 slack_app_token = "SLACK_APP_TOKEN_VALUE"
 
 [settings]
-chat_model = "gpt-3"
+chat_model = "gpt-3.5-turbo"
 system_prompt = "You are a helpful assistant."
-temperature = "0.5"
+temperature = "1"
 ```
 
 ## 실행 방법 🖥️
