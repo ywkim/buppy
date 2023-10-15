@@ -8,17 +8,9 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.8.6"
 langchain = {extras = ["llms"], version = "^0.0.223"}
-chromadb = "^0.3.26"
-gitpython = "^3.1.31"
-pinecone-client = "^2.2.2"
 tiktoken = "^0.4.0"
-pypdf = "^3.12.1"
 google-search-results = "^2.4.2"
 pydantic = "^1.10.11"
-beautifulsoup4 = "^4.12.2"
-playwright = "^1.36.0"
-lxml = "^4.9.3"
-unstructured = "^0.8.1"
 slack-bolt = "^1.18.0"
 
 [tool.poetry.group.dev.dependencies]
