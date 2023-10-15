@@ -6,8 +6,8 @@ import configparser
 import json
 import logging
 import os
+from typing import Any
 
-import pinecone
 from langchain.agents import AgentExecutor, AgentType, initialize_agent
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
@@ -18,10 +18,7 @@ from langchain.utilities import SerpAPIWrapper
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
 
-from qa.book_qa import BookQA
-from qa.git_qa import GitQA
 from qa.search_qa import SearchQA
-from qa.web_qa import WebQA
 
 DEFAULT_CONFIG = {
     "settings": {
@@ -44,12 +41,10 @@ def load_config_from_file(config_file: str) -> configparser.ConfigParser:
 
 
 def load_config_from_env_vars():
-    env_config = {
+    env_config: dict[str, dict[str, Any]] = {
         "api": {
             "openai_api_key": os.environ.get("OPENAI_API_KEY"),
             "serpapi_api_key": os.environ.get("SERPAPI_API_KEY"),
-            "pinecone_api_key": os.environ.get("PINECONE_API_KEY"),
-            "pinecone_env": os.environ.get("PINECONE_ENV"),
             "slack_bot_token": os.environ.get("SLACK_BOT_TOKEN"),
             "slack_app_token": os.environ.get("SLACK_APP_TOKEN"),
         },
@@ -63,7 +58,6 @@ def load_config_from_env_vars():
             "temperature": os.environ.get(
                 "TEMPERATURE", DEFAULT_CONFIG["settings"]["temperature"]
             ),
-            "pinecone_index": os.environ.get("PINECONE_INDEX"),
         },
     }
     config = configparser.ConfigParser()
@@ -95,26 +89,8 @@ def load_tools(config: configparser.ConfigParser):
     embeddings = OpenAIEmbeddings(
         openai_api_key=config.get("api", "openai_api_key"), disallowed_special=()
     )  # type: ignore
-    pinecone_index = config.get("settings", "pinecone_index")
-    pinecone.init(
-        api_key=config.get("api", "pinecone_api_key"),
-        environment=config.get("api", "pinecone_env"),
-    )
     return [
         SearchQA(llm=llm, serp=serp, embeddings=embeddings),
-        WebQA(llm=llm, embeddings=embeddings, handle_tool_error=True),
-        GitQA(
-            llm=llm,
-            embeddings=embeddings,
-            pinecone_index=pinecone_index,
-            handle_tool_error=True,
-        ),
-        BookQA(
-            llm=llm,
-            embeddings=embeddings,
-            pinecone_index=pinecone_index,
-            handle_tool_error=True,
-        ),
     ]
 
 
