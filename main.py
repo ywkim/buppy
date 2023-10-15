@@ -36,7 +36,6 @@ def load_config_from_env_vars():
     env_config: dict[str, dict[str, Any]] = {
         "api": {
             "openai_api_key": os.environ.get("OPENAI_API_KEY"),
-            "serpapi_api_key": os.environ.get("SERPAPI_API_KEY"),
             "slack_bot_token": os.environ.get("SLACK_BOT_TOKEN"),
             "slack_app_token": os.environ.get("SLACK_APP_TOKEN"),
         },

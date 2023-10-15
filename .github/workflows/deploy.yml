@@ -65,10 +65,6 @@ jobs:
           --wait \
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
-          --set serpapiApiKey=${{ secrets.SERPAPI_API_KEY }} \
-          --set pineconeApiKey=${{ secrets.PINECONE_API_KEY }} \
-          --set pineconeEnv="us-west4-gcp-free" \
           --set slackBotToken=${{ secrets.SLACK_BOT_TOKEN }} \
-          --set slackAppToken=${{ secrets.SLACK_APP_TOKEN }} \
-          --set pineconeIndex="libre"
+          --set slackAppToken=${{ secrets.SLACK_APP_TOKEN }}
         kubectl get services -o wide

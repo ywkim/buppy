@@ -23,7 +23,6 @@ class TestConfig(unittest.TestCase):
         self.config_structure = {
             "api": {
                 "openai_api_key",
-                "serpapi_api_key",
                 "slack_bot_token",
                 "slack_app_token",
             },
@@ -40,7 +39,6 @@ class TestConfig(unittest.TestCase):
             os.environ,
             {
                 "OPENAI_API_KEY": "test",
-                "SERPAPI_API_KEY": "test",
                 "SLACK_BOT_TOKEN": "test",
                 "SLACK_APP_TOKEN": "test",
                 "CHAT_MODEL": "gpt-4",
