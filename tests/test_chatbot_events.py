@@ -16,7 +16,7 @@ class TestChatbotEvents(unittest.TestCase):
     def test_get_valid_emoji_codes_no_emojis(self) -> None:
         """Test get_valid_emoji_codes() function when there are no emojis in the input string."""
         input_string = "There are no emojis here."
-        expected_output = []
+        expected_output: list[str] = []
         result = get_valid_emoji_codes(input_string)
         self.assertEqual(result, expected_output)
 
