@@ -5,8 +5,10 @@ import asyncio
 import configparser
 import logging
 import os
+import re
 from typing import Any
 
+import emoji
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
@@ -19,6 +21,8 @@ DEFAULT_CONFIG = {
         "temperature": "0",
     },
 }
+
+EMOJI_SYSTEM_PROMPT = "사용자의 슬랙 메시지에 대한 반응을 표준 Emoji로 표시하세요. 표현하기 어렵다면 :?:를 사용해 주세요."
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -92,7 +96,8 @@ def register_events_and_commands(
         body: dict[str, Any], client, say, logger: logging.Logger
     ):
         """
-        Handle events where the bot is mentioned. Fetch the thread messages, format them and call the Chat API to get a response.
+        Handle events where the bot is mentioned.
+        Fetch the thread messages, format them and call the Chat API to get a response.
         Then send the response to the thread.
         """
         event = body["event"]
@@ -112,6 +117,16 @@ def register_events_and_commands(
         logger.info(f"Added reaction to the message: {reaction}")
 
         try:
+            logger.info("Analyzing sentiment of the user message for emoji reaction")
+            emoji_reactions = await analyze_sentiment(message_text, config)
+            logger.info(f"Suggested emoji reactions are: {emoji_reactions}")
+
+            for emoji_reaction in emoji_reactions:
+                reaction_response = await client.reactions_add(
+                    name=emoji_reaction, channel=channel_id, timestamp=ts
+                )
+                logger.info(f"Added emoji reaction: {reaction_response}")
+
             thread_messages_response = await client.conversations_replies(
                 channel=channel_id, ts=thread_ts
             )
@@ -121,6 +136,7 @@ def register_events_and_commands(
             logger.info(f"Sending {formatted_messages} messages to OpenAI API")
             response_message = await ask_question(formatted_messages, config)
             logger.info(f"Received {response_message} from OpenAI API")
+
             await say(text=response_message, thread_ts=thread_ts)
         except Exception:  # pylint: disable=broad-except
             logger.error("Error handling app_mention event: ", exc_info=True)
@@ -133,6 +149,60 @@ def register_events_and_commands(
             name="eyes", channel=channel_id, timestamp=ts
         )
         logger.info(f"Remove reaction to the message: {response}")
+
+
+async def analyze_sentiment(message: str, config) -> list[str]:
+    system_prompt = SystemMessage(content=EMOJI_SYSTEM_PROMPT)
+    chat = init_chat_model(config)
+    formatted_message = HumanMessage(content=message)
+    resp = await chat.agenerate([[system_prompt, formatted_message]])
+    response_message = resp.generations[0][0].text
+    emoji_codes = get_valid_emoji_codes(response_message)
+    return emoji_codes
+
+
+def get_valid_emoji_codes(input_string: str) -> list[str]:
+    """
+    This function takes a string contains emoji codes, validates each emoji code
+    and returns a list of valid emoji codes, without colons.
+
+    Args:
+        input_string (str): A string that may contain emoji codes.
+
+    Returns:
+        List[str]: A list of the valid emoji codes found in the input_string, without colons.
+    """
+
+    # Find all substrings in the input_string that match the emoji code pattern.
+    potential_codes = re.findall(r"(:[a-zA-Z0-9_+-]+:)", input_string)
+
+    # Validate each emoji code and return only the valid ones without colons.
+    valid_codes = [
+        code.strip(":")
+        for code in potential_codes
+        if is_valid_emoji_code(code.strip(":"))
+    ]
+
+    return valid_codes
+
+
+def is_valid_emoji_code(input_code: str) -> bool:
+    """
+    This function takes a potential emoji code (without colons),
+    examines its validity, and returns a boolean result.
+
+    Args:
+        input_code (str): A potential emoji code (without colons).
+
+    Returns:
+        bool: True if input_code is a valid emoji code, otherwise False.
+    """
+
+    # Convert the potential emoji code to unicode.
+    unicode_conversion = emoji.emojize(f":{input_code}:")
+
+    # Check if the conversion is successful by comparing it with the input_code.
+    return unicode_conversion != f":{input_code}:"
 
 
 def format_messages(
