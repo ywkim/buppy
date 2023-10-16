@@ -40,4 +40,4 @@ jobs:
 
     - name: Run Unit Tests
       run: |
-        poetry run python -m unittest test_config.py
+        poetry run python -m unittest discover -s tests

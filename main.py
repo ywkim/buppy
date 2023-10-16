@@ -199,7 +199,7 @@ def is_valid_emoji_code(input_code: str) -> bool:
     """
 
     # Convert the potential emoji code to unicode.
-    unicode_conversion = emoji.emojize(f":{input_code}:")
+    unicode_conversion = emoji.emojize(f":{input_code}:", language="alias")
 
     # Check if the conversion is successful by comparing it with the input_code.
     return unicode_conversion != f":{input_code}:"
