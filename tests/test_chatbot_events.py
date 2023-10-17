@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import unittest
 
 from main import get_valid_emoji_codes, is_valid_emoji_code
