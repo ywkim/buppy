@@ -18,6 +18,7 @@ Buppy는 슬랙에서 동작하는 AI 동반자입니다! Buppy는 사용자의 
 - 패키지 관리 도구 Poetry
 - Slack Workspace
 - Slack App 생성
+- OpenAI API Key
 
 ### 패키지 관리 도구 Poetry 설치
 
@@ -46,6 +47,8 @@ chat_model = "gpt-3.5-turbo"
 system_prompt = "You are a helpful assistant."
 temperature = "1"
 ```
+
+OpenAI의 API Key는 [OpenAI 플랫폼](https://platform.openai.com/account/api-keys)에서 생성할 수 있습니다. 생성한 Key를 위의 설정 예제에 있는 `OPEN_AI_API_KEY_VALUE` 위치에 붙여넣으세요.
 
 ## 실행 방법 🖥️
 
@@ -80,11 +83,11 @@ https://api.slack.com/apps
 
 #### 앱 설치와 봇 토큰 복사
 
-'Install App'을 클릭하여 앱을 워크스페이스에 설치하고, 'Bot User OAuth Access Token'을 복사합니다. 이 토큰을 `config.ini` 파일의 `slack_bot_token`에 붙여넣습니다.
+'Install App'을 클릭하여 앱을 워크스페이스에 설치하고, 'Bot User OAuth Token'을 복사합니다. 이 토큰을 `config.ini` 파일의 `slack_bot_token`에 붙여넣습니다.
 
 #### Socket Mode 활성화와 App Level 토큰 생성
 
-`Settings` -> `Socket Mode`에 들어가 Socket Mode를 활성화하고 'App Level Tokens'를 생성하세요. 이 토큰을 `config.ini` 파일의 `slack_app_token`에 붙여넣습니다.
+'Socket Mode'에 들어가 Socket Mode를 활성화하고 'App Level Tokens'를 생성하세요. 이 토큰을 `config.ini` 파일의 `slack_app_token`에 붙여넣습니다.
 
 #### 이벤트 구독 설정
 
