@@ -34,8 +34,6 @@ logging.basicConfig(
 class InvalidRoleError(Exception):
     """Raised when the role isn't AI or Human"""
 
-    pass
-
 
 def load_config_from_file(config_file: str) -> ConfigParser:
     config = ConfigParser()
