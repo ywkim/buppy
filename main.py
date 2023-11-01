@@ -31,6 +31,12 @@ logging.basicConfig(
 )
 
 
+class InvalidRoleError(Exception):
+    """Raised when the role isn't AI or Human"""
+
+    pass
+
+
 def load_config_from_file(config_file: str) -> ConfigParser:
     config = ConfigParser()
     config.read_dict(DEFAULT_CONFIG)
@@ -241,6 +247,9 @@ def load_additional_messages_from_file(file_path: str) -> list[BaseMessage]:
 
     Returns:
     List[BaseMessage]: A list of message objects created from the file.
+
+    Raises:
+    InvalidRoleError: If the role in the CSV file isn't 'AI' or 'Human'.
     """
     messages: list[BaseMessage] = []
 
@@ -252,6 +261,10 @@ def load_additional_messages_from_file(file_path: str) -> list[BaseMessage]:
                 messages.append(HumanMessage(content=content))
             elif role == "AI":
                 messages.append(AIMessage(content=content))
+            else:
+                raise InvalidRoleError(
+                    f"Invalid role {role} in CSV file. Role must be either 'AI' or 'Human'."
+                )
 
     return messages
 
