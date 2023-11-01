@@ -3,10 +3,12 @@ from __future__ import annotations
 import argparse
 import asyncio
 import configparser
+import csv
 import logging
 import os
 import re
-from typing import Any
+from configparser import ConfigParser
+from typing import Any, List
 
 import emoji
 from langchain.chat_models import ChatOpenAI
@@ -29,8 +31,8 @@ logging.basicConfig(
 )
 
 
-def load_config_from_file(config_file: str) -> configparser.ConfigParser:
-    config = configparser.ConfigParser()
+def load_config_from_file(config_file: str) -> ConfigParser:
+    config = ConfigParser()
     config.read_dict(DEFAULT_CONFIG)
     config.read(config_file)
     return config
@@ -55,12 +57,12 @@ def load_config_from_env_vars():
             ),
         },
     }
-    config = configparser.ConfigParser()
+    config = ConfigParser()
     config.read_dict(env_config)
     return config
 
 
-def load_config(config_file: (str | None) = None) -> configparser.ConfigParser:
+def load_config(config_file: (str | None) = None) -> ConfigParser:
     """Load configuration from a given file and fall back to environment variables if the file does not exist."""
     if config_file:
         if os.path.exists(config_file):
@@ -74,7 +76,7 @@ def load_config(config_file: (str | None) = None) -> configparser.ConfigParser:
     return load_config_from_env_vars()
 
 
-def init_chat_model(config: configparser.ConfigParser) -> ChatOpenAI:
+def init_chat_model(config: ConfigParser) -> ChatOpenAI:
     """Initialize the langchain chat model."""
     chat = ChatOpenAI(
         model=config.get("settings", "chat_model"),
@@ -84,9 +86,7 @@ def init_chat_model(config: configparser.ConfigParser) -> ChatOpenAI:
     return chat
 
 
-def register_events_and_commands(
-    app: AsyncApp, config: configparser.ConfigParser
-) -> None:
+def register_events_and_commands(app: AsyncApp, config: ConfigParser) -> None:
     @app.event("message")
     async def handle_message_events(body, logger):
         logger.info(body)
@@ -232,11 +232,51 @@ def format_messages(
     return formatted_messages
 
 
-async def ask_question(formatted_messages: list[BaseMessage], config) -> str:
+def load_additional_messages_from_file(file_path: str) -> list[BaseMessage]:
+    """
+    Load additional messages from a CSV file and return a list of message objects.
+
+    Args:
+    file_path (str): Path of the CSV file containing additional messages.
+
+    Returns:
+    List[BaseMessage]: A list of message objects created from the file.
+    """
+    messages: list[BaseMessage] = []
+
+    with open(file_path, "r", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            role, content = row
+            if role == "Human":
+                messages.append(HumanMessage(content=content))
+            elif role == "AI":
+                messages.append(AIMessage(content=content))
+
+    return messages
+
+
+async def ask_question(
+    formatted_messages: list[BaseMessage], config: ConfigParser
+) -> str:
     """
     Pass the formatted_messages to the Chat API and return the response content.
+
+    Args:
+    formatted_messages (List[BaseMessage]): List of formatted messages.
+    config (ConfigParser): Configuration parameters for the application.
+
+    Returns:
+    str: Content of the response from the Chat API.
     """
     system_prompt = SystemMessage(content=config.get("settings", "system_prompt"))
+
+    # Try to load additional messages from a file if provided in the settings.
+    message_file_path = config.get("settings", "message_file", fallback=None)
+    if message_file_path:
+        logging.info("Loading additional messages from file %s", message_file_path)
+        additional_messages = load_additional_messages_from_file(message_file_path)
+        formatted_messages = additional_messages + formatted_messages
     chat = init_chat_model(config)
     resp = await chat.agenerate([[system_prompt, *formatted_messages]])
     return resp.generations[0][0].text
