@@ -8,7 +8,7 @@ import logging
 import os
 import re
 from configparser import ConfigParser
-from typing import Any, List
+from typing import Any
 
 import emoji
 from langchain.chat_models import ChatOpenAI
