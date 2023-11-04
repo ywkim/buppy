@@ -16,6 +16,9 @@ from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
 
+ERROR_EMOJI = "bangbang"
+EXCLUDED_EMOJIS = ["eyes", ERROR_EMOJI]
+
 DEFAULT_CONFIG = {
     "settings": {
         "chat_model": "gpt-4",
@@ -37,8 +40,7 @@ def load_config_from_file(config_file: str) -> ConfigParser:
     config.read(config_file)
     return config
 
-
-def load_config_from_env_vars():
+def load_config_from_env_vars() -> dict[str, dict[str, Any]]:
     env_config: dict[str, dict[str, Any]] = {
         "api": {
             "openai_api_key": os.environ.get("OPENAI_API_KEY"),
@@ -118,7 +120,9 @@ def register_events_and_commands(app: AsyncApp, config: ConfigParser) -> None:
 
         try:
             logger.info("Analyzing sentiment of the user message for emoji reaction")
-            emoji_reactions = await analyze_sentiment(message_text, config)
+            emoji_reactions = [
+                emoji for emoji in emoji_reactions if emoji not in EXCLUDED_EMOJIS
+            ]
             logger.info(f"Suggested emoji reactions are: {emoji_reactions}")
 
             for emoji_reaction in emoji_reactions:
@@ -145,13 +149,19 @@ def register_events_and_commands(app: AsyncApp, config: ConfigParser) -> None:
                 thread_ts=thread_ts,
             )
 
+            # Add error emoji reaction to user's message
+            response = await client.reactions_add(
+                name=ERROR_EMOJI, channel=channel_id, timestamp=ts
+            )
+            logger.info(f"Added error emoji reaction: {response}")
+
         response = await client.reactions_remove(
             name="eyes", channel=channel_id, timestamp=ts
         )
         logger.info(f"Remove reaction to the message: {response}")
 
 
-async def analyze_sentiment(message: str, config) -> list[str]:
+async def analyze_sentiment(message: str, config: ConfigParser) -> list[str]:
     system_prompt = SystemMessage(content=EMOJI_SYSTEM_PROMPT)
     chat = init_chat_model(config)
     formatted_message = HumanMessage(content=message)
