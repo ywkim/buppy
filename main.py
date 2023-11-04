@@ -10,7 +10,7 @@ import re
 from configparser import ConfigParser
 from typing import Any
 
-import emoji
+import emoji_data_python
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
@@ -27,7 +27,7 @@ DEFAULT_CONFIG = {
     },
 }
 
-EMOJI_SYSTEM_PROMPT = "사용자의 슬랙 메시지에 대한 반응을 표준 Emoji로 표시하세요. 표현하기 어렵다면 :?:를 사용해 주세요."
+EMOJI_SYSTEM_PROMPT = "사용자의 슬랙 메시지에 대한 반응을 슬랙 Emoji로 표시하세요. 표현하기 어렵다면 :?:를 사용해 주세요."
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -214,11 +214,7 @@ def is_valid_emoji_code(input_code: str) -> bool:
         bool: True if input_code is a valid emoji code, otherwise False.
     """
 
-    # Convert the potential emoji code to unicode.
-    unicode_conversion = emoji.emojize(f":{input_code}:", language="alias")
-
-    # Check if the conversion is successful by comparing it with the input_code.
-    return unicode_conversion != f":{input_code}:"
+    return input_code in emoji_data_python.emoji_short_names
 
 
 def format_messages(
