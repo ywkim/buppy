@@ -41,7 +41,7 @@ def load_config_from_file(config_file: str) -> ConfigParser:
     return config
 
 
-def load_config_from_env_vars() -> dict[str, dict[str, Any]]:
+def load_config_from_env_vars() -> ConfigParser:
     env_config: dict[str, dict[str, Any]] = {
         "api": {
             "openai_api_key": os.environ.get("OPENAI_API_KEY"),
