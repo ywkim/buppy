@@ -242,4 +242,5 @@ cython_debug/
 *.pv
 
 # Config
-config.ini
+*.ini
+*.csv
