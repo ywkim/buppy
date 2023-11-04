@@ -319,6 +319,11 @@ async def main():
     app = AsyncApp(token=slack_bot_token)
     handler = AsyncSocketModeHandler(app, slack_app_token)
 
+    # Fetch bot's user id
+    bot_auth_info = await app.client.auth_test()
+    bot_user_id = bot_auth_info["user_id"]
+    logging.info("Bot User ID is %s", bot_user_id)
+
     logging.info("Registering event and command handlers")
     register_events_and_commands(app, config)
 
