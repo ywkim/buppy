@@ -40,6 +40,7 @@ def load_config_from_file(config_file: str) -> ConfigParser:
     config.read(config_file)
     return config
 
+
 def load_config_from_env_vars() -> dict[str, dict[str, Any]]:
     env_config: dict[str, dict[str, Any]] = {
         "api": {
