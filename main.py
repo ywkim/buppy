@@ -244,15 +244,15 @@ def format_messages(
     return formatted_messages
 
 
-def load_additional_messages_from_file(file_path: str) -> list[BaseMessage]:
+def load_prefix_messages_from_file(file_path: str) -> list[BaseMessage]:
     """
-    Load additional messages from a CSV file and return a list of message objects.
+    Load prefix messages from a CSV file and return a list of message objects.
 
     Args:
-    file_path (str): Path of the CSV file containing additional messages.
+    file_path (str): Path of the CSV file containing prefix messages.
 
     Returns:
-    List[BaseMessage]: A list of message objects created from the file.
+    list[BaseMessage]: A list of message objects created from the file.
 
     Raises:
     InvalidRoleError: If the role in the CSV file isn't 'AI' or 'Human'.
@@ -282,7 +282,7 @@ async def ask_question(
     Pass the formatted_messages to the Chat API and return the response content.
 
     Args:
-    formatted_messages (List[BaseMessage]): List of formatted messages.
+    formatted_messages (list[BaseMessage]): list of formatted messages.
     config (ConfigParser): Configuration parameters for the application.
 
     Returns:
@@ -290,12 +290,12 @@ async def ask_question(
     """
     system_prompt = SystemMessage(content=config.get("settings", "system_prompt"))
 
-    # Try to load additional messages from a file if provided in the settings.
+    # Try to load prefix messages from a file if provided in the settings.
     message_file_path = config.get("settings", "message_file", fallback=None)
     if message_file_path:
-        logging.info("Loading additional messages from file %s", message_file_path)
-        additional_messages = load_additional_messages_from_file(message_file_path)
-        formatted_messages = additional_messages + formatted_messages
+        logging.info("Loading prefix messages from file %s", message_file_path)
+        prefix_messages = load_prefix_messages_from_file(message_file_path)
+        formatted_messages = prefix_messages + formatted_messages
     chat = init_chat_model(config)
     resp = await chat.agenerate([[system_prompt, *formatted_messages]])
     return resp.generations[0][0].text
