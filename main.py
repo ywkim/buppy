@@ -16,6 +16,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
+from slack_bolt.context.say.async_say import AsyncSay
+from slack_sdk.web.async_client import AsyncWebClient
 
 ERROR_EMOJI = "bangbang"
 EXCLUDED_EMOJIS = ["eyes", ERROR_EMOJI]
@@ -254,8 +256,11 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
 
     @app.event("app_mention")
     async def handle_mention_events(
-        body: dict[str, Any], client, say, logger: logging.Logger
-    ):
+        body: dict[str, Any],
+        client: AsyncWebClient,
+        say: AsyncSay,
+        logger: logging.Logger,
+    ) -> None:
         """
         Handle events where the bot is mentioned.
         Fetch the thread messages, format them and call the Chat API to get a response.
@@ -265,14 +270,14 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
         channel_id = event["channel"]
         ts = event["ts"]
         thread_ts = event.get("thread_ts", None) or ts
-        user = event["user"]
+        user_id = event["user"]
         bot_user_id = body["authorizations"][0]["user_id"]
         message_text = event["text"].replace(f"<@{bot_user_id}>", "").strip()
 
         logger.info(
             create_log_message(
                 "Received a question from user",
-                user_id=user,
+                user_id=user_id,
                 message_text=message_text,
             )
         )
@@ -330,8 +335,8 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
         except Exception:  # pylint: disable=broad-except
             logger.error("Error handling app_mention event: ", exc_info=True)
             await say(
-                text="Sorry, I encountered a problem while trying to process your request. The engineering team has been notified.",
-                thread_ts=thread_ts,
+                channel=user_id,
+                text=f"Sorry, I encountered a problem while trying to process your request regarding the message: '{message_text}'. The engineering team has been notified.",
             )
 
             # Add error emoji reaction to user's message
