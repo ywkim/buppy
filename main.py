@@ -121,6 +121,7 @@ def register_events_and_commands(app: AsyncApp, config: ConfigParser) -> None:
 
         try:
             logger.info("Analyzing sentiment of the user message for emoji reaction")
+            emoji_reactions = await analyze_sentiment(message_text, config)
             emoji_reactions = [
                 emoji for emoji in emoji_reactions if emoji not in EXCLUDED_EMOJIS
             ]
