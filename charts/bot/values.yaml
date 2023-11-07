@@ -3,4 +3,4 @@
 # Declare variables to be passed into your templates.
 
 env:
-  CHAT_MODEL: "gpt-4"
+  CHAT_MODEL: "gpt-4-1106-preview"
