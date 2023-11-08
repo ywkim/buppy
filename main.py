@@ -15,8 +15,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
-from firebase_admin import credentials, firestore, initialize_app
-from firebase_admin.firestore_async import AsyncClient
+from google.cloud import firestore
 
 ERROR_EMOJI = "bangbang"
 EXCLUDED_EMOJIS = ["eyes", ERROR_EMOJI]
@@ -27,6 +26,9 @@ DEFAULT_CONFIG = {
         "system_prompt": "You are a helpful assistant.",
         "temperature": "0",
     },
+    "firebase": {
+        "enabled": "false"
+    }
 }
 
 EMOJI_SYSTEM_PROMPT = "사용자의 슬랙 메시지에 대한 반응을 슬랙 Emoji로 표시하세요. 표현하기 어렵다면 :?:를 사용해 주세요."
@@ -71,6 +73,9 @@ class AppConfig:
                     "TEMPERATURE", DEFAULT_CONFIG["settings"]["temperature"]
                 ),
             },
+            "firebase": {
+                "enabled": os.environ.get("FIREBASE_ENABLED", DEFAULT_CONFIG["firebase"]["enabled"]).lower() in ["true", "1", "yes"]
+            }
         }
         self.config.read_dict(env_config)
 
@@ -83,9 +88,13 @@ class AppConfig:
         self.bot_token = self.config.get('api', 'slack_bot_token')
         self.app_token = self.config.get('api', 'slack_app_token')
 
+        required_firebase_settings = ["enabled"]
+        for setting in required_firebase_settings:
+            assert setting in self.config['firebase'], f"Missing configuration for {setting}"
+
     async def load_config_from_firebase(self, bot_user_id: str) -> None:
         """Load configuration from Firebase Firestore."""
-        db = AsyncClient()
+        db = firestore.AsyncClient()
         bot_ref = db.collection('Bots').document(bot_user_id)
         bot = await bot_ref.get()
         if not bot.exists:
@@ -129,7 +138,7 @@ def init_chat_model(config: ConfigParser) -> ChatOpenAI:
     return chat
 
 
-def register_events_and_commands(app: AsyncApp, config: ConfigParser) -> None:
+def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
     @app.event("message")
     async def handle_message_events(body, logger):
         logger.info(body)
@@ -160,8 +169,13 @@ def register_events_and_commands(app: AsyncApp, config: ConfigParser) -> None:
         logger.info(f"Added reaction to the message: {reaction}")
 
         try:
+            # If Firebase is enabled, override the config with the one from Firebase
+            firebase_enabled = app_config.config.getboolean('firebase', 'enabled', fallback=False)
+            if firebase_enabled:
+                await app_config.load_config_from_firebase(bot_user_id)
+
             logger.info("Analyzing sentiment of the user message for emoji reaction")
-            emoji_reactions = await analyze_sentiment(message_text, config)
+            emoji_reactions = await analyze_sentiment(message_text, app_config.config)
             emoji_reactions = [
                 emoji for emoji in emoji_reactions if emoji not in EXCLUDED_EMOJIS
             ]
@@ -180,7 +194,7 @@ def register_events_and_commands(app: AsyncApp, config: ConfigParser) -> None:
 
             formatted_messages = format_messages(thread_messages, bot_user_id)
             logger.info(f"Sending {formatted_messages} messages to OpenAI API")
-            response_message = await ask_question(formatted_messages, config)
+            response_message = await ask_question(formatted_messages, app_config.config)
             logger.info(f"Received {response_message} from OpenAI API")
 
             await say(text=response_message, thread_ts=thread_ts)
@@ -398,20 +412,13 @@ async def main():
     app = AsyncApp(token=app_config.bot_token)
     handler = AsyncSocketModeHandler(app, app_config.app_token)
 
-    # If Firebase is enabled, override the config with the one from Firebase
-    firebase_enabled = os.environ.get('FIREBASE_ENABLED', '').lower() in ['true', '1', 'yes']
-    if firebase_enabled:
-        initialize_app()
-
-        # Fetch bot's user id
-        bot_auth_info = await app.client.auth_test()
-        bot_user_id = bot_auth_info["user_id"]
-        await app_config.load_config_from_firebase(bot_user_id)
-
+    # Fetch bot's user id
+    bot_auth_info = await app.client.auth_test()
+    bot_user_id = bot_auth_info["user_id"]
     logging.info("Bot User ID is %s", bot_user_id)
 
     logging.info("Registering event and command handlers")
-    register_events_and_commands(app, app_config.config)
+    register_events_and_commands(app, app_config)
 
     logging.info("Starting SocketModeHandler")
     await handler.start_async()
