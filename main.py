@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import configparser
+import json
 import csv
 import logging
 import os
@@ -98,10 +98,10 @@ class AppConfig:
 
         self.config.read_dict({
             "settings": {
-                "chat_model": companion.get('ChatModel'),
-                "system_prompt": companion.get('SystemPrompt'),
-                "temperature": companion.get('Temperature'),
-                "prefix_messages_content": companion.get('PrefixMessagesContent'),
+                "chat_model": companion.get('chat_model'),
+                "system_prompt": companion.get('system_prompt'),
+                "temperature": companion.get('temperature'),
+                "prefix_messages_content": json.dumps(companion.get('prefix_messages_content')),
             },
         })
 
@@ -311,6 +311,39 @@ def load_prefix_messages_from_file(file_path: str) -> list[BaseMessage]:
     return messages
 
 
+def format_prefix_messages_content(prefix_messages_json: str) -> list[BaseMessage]:
+    """
+    Format prefix messages content from json string to BaseMessage objects
+
+    Args:
+        prefix_messages_json (str): JSON string with prefix messages content
+
+    Returns:
+        list[BaseMessage]: list of BaseMessage instances
+
+    Raises:
+        InvalidRoleError: If the role in the content isn't 'assistant', 'user', or 'system'.
+    """
+    prefix_messages = json.loads(prefix_messages_json)
+    formatted_messages: list[BaseMessage] = []
+
+    for msg in prefix_messages:
+        role = msg["role"]
+        content = msg["content"]
+
+        if role.lower() == "user":
+            formatted_messages.append(HumanMessage(content=content))
+        elif role.lower() == "system":
+            formatted_messages.append(SystemMessage(content=content))
+        elif role.lower() == "assistant":
+            formatted_messages.append(AIMessage(content=content))
+        else:
+            raise InvalidRoleError(
+                f"Invalid role {role} in prefix content message. Role must be 'assistant', 'user', or 'system'."
+            )
+
+    return formatted_messages
+
 async def ask_question(
     formatted_messages: list[BaseMessage], config: ConfigParser
 ) -> str:
@@ -318,20 +351,31 @@ async def ask_question(
     Pass the formatted_messages to the Chat API and return the response content.
 
     Args:
-    formatted_messages (list[BaseMessage]): list of formatted messages.
-    config (ConfigParser): Configuration parameters for the application.
+        formatted_messages (list[BaseMessage]): list of formatted messages.
+        config (ConfigParser): Configuration parameters for the application.
 
     Returns:
-    str: Content of the response from the Chat API.
+        str: Content of the response from the Chat API.
     """
     system_prompt = SystemMessage(content=config.get("settings", "system_prompt"))
 
-    # Try to load prefix messages from a file if provided in the settings.
+    # Check if 'message_file' setting presents. If it does, load prefix messages from file.
+    # If not, check if 'prefix_messages_content' is not None, then parse it to create the list of prefix messages
     message_file_path = config.get("settings", "message_file", fallback=None)
+    prefix_messages_content = config.get("settings", "prefix_messages_content", fallback=None)
+
+    prefix_messages: list[BaseMessage] = []
+
     if message_file_path:
         logging.info("Loading prefix messages from file %s", message_file_path)
         prefix_messages = load_prefix_messages_from_file(message_file_path)
-        formatted_messages = prefix_messages + formatted_messages
+    elif prefix_messages_content:
+        logging.info("Parsing prefix messages from settings")
+        prefix_messages = format_prefix_messages_content(prefix_messages_content)
+
+    # Appending prefix messages before the main conversation
+    formatted_messages = prefix_messages + formatted_messages
+
     chat = init_chat_model(config)
     resp = await chat.agenerate([[system_prompt, *formatted_messages]])
     return resp.generations[0][0].text
