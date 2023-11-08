@@ -63,6 +63,8 @@ jobs:
           --install \
           --atomic \
           --wait \
+          --namespace U05UF7ZJ9SS \
+          --create-namespace \
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
           --set slackBotToken=${{ secrets.SLACK_BOT_TOKEN }} \
