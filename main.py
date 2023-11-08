@@ -15,6 +15,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
+from firebase_admin import credentials, firestore, initialize_app
+from firebase_admin.firestore_async import AsyncClient
 
 ERROR_EMOJI = "bangbang"
 EXCLUDED_EMOJIS = ["eyes", ERROR_EMOJI]
@@ -38,50 +40,84 @@ class InvalidRoleError(Exception):
     """Raised when the role isn't AI or Human"""
 
 
-def load_config_from_file(config_file: str) -> ConfigParser:
-    config = ConfigParser()
-    config.read_dict(DEFAULT_CONFIG)
-    config.read(config_file)
-    return config
+class AppConfig:
+    """Handles application configuration."""
 
+    def __init__(self):
+        """Initialize AppConfig."""
+        self.config: ConfigParser = ConfigParser()
+        self.config.read_dict(DEFAULT_CONFIG)
 
-def load_config_from_env_vars() -> ConfigParser:
-    env_config: dict[str, dict[str, Any]] = {
-        "api": {
-            "openai_api_key": os.environ.get("OPENAI_API_KEY"),
-            "slack_bot_token": os.environ.get("SLACK_BOT_TOKEN"),
-            "slack_app_token": os.environ.get("SLACK_APP_TOKEN"),
-        },
-        "settings": {
-            "chat_model": os.environ.get(
-                "CHAT_MODEL", DEFAULT_CONFIG["settings"]["chat_model"]
-            ),
-            "system_prompt": os.environ.get(
-                "SYSTEM_PROMPT", DEFAULT_CONFIG["settings"]["system_prompt"]
-            ),
-            "temperature": os.environ.get(
-                "TEMPERATURE", DEFAULT_CONFIG["settings"]["temperature"]
-            ),
-        },
-    }
-    config = ConfigParser()
-    config.read_dict(env_config)
-    return config
+    def load_config_from_file(self, config_file: str) -> None:
+        """Load configuration from a given file path."""
+        self.config.read(config_file)
 
+    def load_config_from_env_vars(self) -> None:
+        """Load configuration from environment variables."""
+        env_config: dict[str, dict[str, Any]] = {
+            "api": {
+                "openai_api_key": os.environ.get("OPENAI_API_KEY"),
+                "slack_bot_token": os.environ.get("SLACK_BOT_TOKEN"),
+                "slack_app_token": os.environ.get("SLACK_APP_TOKEN"),
+            },
+            "settings": {
+                "chat_model": os.environ.get(
+                    "CHAT_MODEL", DEFAULT_CONFIG["settings"]["chat_model"]
+                ),
+                "system_prompt": os.environ.get(
+                    "SYSTEM_PROMPT", DEFAULT_CONFIG["settings"]["system_prompt"]
+                ),
+                "temperature": os.environ.get(
+                    "TEMPERATURE", DEFAULT_CONFIG["settings"]["temperature"]
+                ),
+            },
+        }
+        self.config.read_dict(env_config)
 
-def load_config(config_file: (str | None) = None) -> ConfigParser:
-    """Load configuration from a given file and fall back to environment variables if the file does not exist."""
-    if config_file:
-        if os.path.exists(config_file):
-            return load_config_from_file(config_file)
-        raise FileNotFoundError(f"Config file {config_file} does not exist.")
+    def _validate_config(self) -> None:
+        """Validate that required configuration variables are present."""
+        required_settings = ["openai_api_key", "slack_bot_token", "slack_app_token"]
+        for setting in required_settings:
+            assert setting in self.config['api'], f"Missing configuration for {setting}"
 
-    if os.path.exists("config.ini"):
-        return load_config_from_file("config.ini")
+        self.bot_token = self.config.get('api', 'slack_bot_token')
+        self.app_token = self.config.get('api', 'slack_app_token')
 
-    # If no config file provided, load config from environment variables
-    return load_config_from_env_vars()
+    async def load_config_from_firebase(self, bot_user_id: str) -> None:
+        """Load configuration from Firebase Firestore."""
+        db = AsyncClient()
+        bot_ref = db.collection('Bots').document(bot_user_id)
+        bot = await bot_ref.get()
+        if not bot.exists:
+            raise FileNotFoundError(f"Bot with ID {bot_user_id} does not exist in Firebase.")
+        companion_id = bot.get('CompanionId')
+        companion_ref = db.collection('Companions').document(companion_id)
+        companion = await companion_ref.get()
+        if not companion.exists:
+            raise FileNotFoundError(f"Companion with ID {companion_id} does not exist in Firebase.")
 
+        self.config.read_dict({
+            "settings": {
+                "chat_model": companion.get('ChatModel'),
+                "system_prompt": companion.get('SystemPrompt'),
+                "temperature": companion.get('Temperature'),
+                "prefix_messages_content": companion.get('PrefixMessagesContent'),
+            },
+        })
+
+    def load_config(self, config_file: (str | None) = None) -> None:
+        """Load configuration from a given file and fall back to environment variables if the file does not exist."""
+        if config_file:
+            if os.path.exists(config_file):
+                self.load_config_from_file(config_file)
+            raise FileNotFoundError(f"Config file {config_file} does not exist.")
+        elif os.path.exists("config.ini"):
+            self.load_config_from_file("config.ini")
+        else:
+            # If no config file provided, load config from environment variables
+            self.load_config_from_env_vars()
+
+        self._validate_config()
 
 def init_chat_model(config: ConfigParser) -> ChatOpenAI:
     """Initialize the langchain chat model."""
@@ -311,29 +347,27 @@ async def main():
     )
     args = parser.parse_args()
 
-    config = load_config(args.config_file)
-
-    try:
-        slack_bot_token = config.get("api", "slack_bot_token")
-        slack_app_token = config.get("api", "slack_app_token")
-    except configparser.NoOptionError as e:
-        logging.error(
-            "Configuration error: %s. Please provide the required api keys either in a config file or as environment variables.",
-            e,
-        )
-        raise SystemExit from e
+    app_config = AppConfig()
+    app_config.load_config(args.config_file)
 
     logging.info("Initializing AsyncApp and SocketModeHandler")
-    app = AsyncApp(token=slack_bot_token)
-    handler = AsyncSocketModeHandler(app, slack_app_token)
+    app = AsyncApp(token=app_config.bot_token)
+    handler = AsyncSocketModeHandler(app, app_config.app_token)
 
-    # Fetch bot's user id
-    bot_auth_info = await app.client.auth_test()
-    bot_user_id = bot_auth_info["user_id"]
+    # If Firebase is enabled, override the config with the one from Firebase
+    firebase_enabled = os.environ.get('FIREBASE_ENABLED', '').lower() in ['true', '1', 'yes']
+    if firebase_enabled:
+        initialize_app()
+
+        # Fetch bot's user id
+        bot_auth_info = await app.client.auth_test()
+        bot_user_id = bot_auth_info["user_id"]
+        await app_config.load_config_from_firebase(bot_user_id)
+
     logging.info("Bot User ID is %s", bot_user_id)
 
     logging.info("Registering event and command handlers")
-    register_events_and_commands(app, config)
+    register_events_and_commands(app, app_config.config)
 
     logging.info("Starting SocketModeHandler")
     await handler.start_async()
