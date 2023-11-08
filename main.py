@@ -26,9 +26,7 @@ DEFAULT_CONFIG = {
         "system_prompt": "You are a helpful assistant.",
         "temperature": "0",
     },
-    "firebase": {
-        "enabled": "false"
-    }
+    "firebase": {"enabled": "false"},
 }
 
 EMOJI_SYSTEM_PROMPT = "사용자의 슬랙 메시지에 대한 반응을 슬랙 Emoji로 표시하세요. 표현하기 어렵다면 :?:를 사용해 주세요."
@@ -74,8 +72,11 @@ class AppConfig:
                 ),
             },
             "firebase": {
-                "enabled": os.environ.get("FIREBASE_ENABLED", DEFAULT_CONFIG["firebase"]["enabled"]).lower() in ["true", "1", "yes"]
-            }
+                "enabled": os.environ.get(
+                    "FIREBASE_ENABLED", DEFAULT_CONFIG["firebase"]["enabled"]
+                ).lower()
+                in {"true", "1", "yes"}
+            },
         }
         self.config.read_dict(env_config)
 
@@ -83,36 +84,46 @@ class AppConfig:
         """Validate that required configuration variables are present."""
         required_settings = ["openai_api_key", "slack_bot_token", "slack_app_token"]
         for setting in required_settings:
-            assert setting in self.config['api'], f"Missing configuration for {setting}"
+            assert setting in self.config["api"], f"Missing configuration for {setting}"
 
-        self.bot_token = self.config.get('api', 'slack_bot_token')
-        self.app_token = self.config.get('api', 'slack_app_token')
+        self.bot_token = self.config.get("api", "slack_bot_token")
+        self.app_token = self.config.get("api", "slack_app_token")
 
         required_firebase_settings = ["enabled"]
         for setting in required_firebase_settings:
-            assert setting in self.config['firebase'], f"Missing configuration for {setting}"
+            assert (
+                setting in self.config["firebase"]
+            ), f"Missing configuration for {setting}"
 
     async def load_config_from_firebase(self, bot_user_id: str) -> None:
         """Load configuration from Firebase Firestore."""
         db = firestore.AsyncClient()
-        bot_ref = db.collection('Bots').document(bot_user_id)
+        bot_ref = db.collection("Bots").document(bot_user_id)
         bot = await bot_ref.get()
         if not bot.exists:
-            raise FileNotFoundError(f"Bot with ID {bot_user_id} does not exist in Firebase.")
-        companion_id = bot.get('CompanionId')
-        companion_ref = db.collection('Companions').document(companion_id)
+            raise FileNotFoundError(
+                f"Bot with ID {bot_user_id} does not exist in Firebase."
+            )
+        companion_id = bot.get("CompanionId")
+        companion_ref = db.collection("Companions").document(companion_id)
         companion = await companion_ref.get()
         if not companion.exists:
-            raise FileNotFoundError(f"Companion with ID {companion_id} does not exist in Firebase.")
+            raise FileNotFoundError(
+                f"Companion with ID {companion_id} does not exist in Firebase."
+            )
 
-        self.config.read_dict({
-            "settings": {
-                "chat_model": companion.get('chat_model'),
-                "system_prompt": companion.get('system_prompt'),
-                "temperature": companion.get('temperature'),
-                "prefix_messages_content": json.dumps(companion.get('prefix_messages_content')),
-            },
-        })
+        self.config.read_dict(
+            {
+                "settings": {
+                    "chat_model": companion.get("chat_model"),
+                    "system_prompt": companion.get("system_prompt"),
+                    "temperature": companion.get("temperature"),
+                    "prefix_messages_content": json.dumps(
+                        companion.get("prefix_messages_content")
+                    ),
+                },
+            }
+        )
 
     def load_config(self, config_file: (str | None) = None) -> None:
         """Load configuration from a given file and fall back to environment variables if the file does not exist."""
@@ -127,6 +138,7 @@ class AppConfig:
             self.load_config_from_env_vars()
 
         self._validate_config()
+
 
 def init_chat_model(config: ConfigParser) -> ChatOpenAI:
     """Initialize the langchain chat model."""
@@ -170,7 +182,9 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
 
         try:
             # If Firebase is enabled, override the config with the one from Firebase
-            firebase_enabled = app_config.config.getboolean('firebase', 'enabled', fallback=False)
+            firebase_enabled = app_config.config.getboolean(
+                "firebase", "enabled", fallback=False
+            )
             if firebase_enabled:
                 await app_config.load_config_from_firebase(bot_user_id)
 
@@ -358,6 +372,7 @@ def format_prefix_messages_content(prefix_messages_json: str) -> list[BaseMessag
 
     return formatted_messages
 
+
 async def ask_question(
     formatted_messages: list[BaseMessage], config: ConfigParser
 ) -> str:
@@ -376,7 +391,9 @@ async def ask_question(
     # Check if 'message_file' setting presents. If it does, load prefix messages from file.
     # If not, check if 'prefix_messages_content' is not None, then parse it to create the list of prefix messages
     message_file_path = config.get("settings", "message_file", fallback=None)
-    prefix_messages_content = config.get("settings", "prefix_messages_content", fallback=None)
+    prefix_messages_content = config.get(
+        "settings", "prefix_messages_content", fallback=None
+    )
 
     prefix_messages: list[BaseMessage] = []
 
