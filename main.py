@@ -51,6 +51,7 @@ class AppConfig:
     def load_config_from_file(self, config_file: str) -> None:
         """Load configuration from a given file path."""
         self.config.read(config_file)
+        logging.info("Configuration loaded from file %s", config_file)
 
     def load_config_from_env_vars(self) -> None:
         """Load configuration from environment variables."""
@@ -79,6 +80,7 @@ class AppConfig:
             },
         }
         self.config.read_dict(env_config)
+        logging.info("Configuration loaded from environment variables")
 
     def _validate_config(self) -> None:
         """Validate that required configuration variables are present."""
@@ -124,13 +126,17 @@ class AppConfig:
                 },
             }
         )
+        logging.info(
+            "Configuration loaded from Firebase Firestore for bot %s", bot_user_id
+        )
 
     def load_config(self, config_file: (str | None) = None) -> None:
         """Load configuration from a given file and fall back to environment variables if the file does not exist."""
         if config_file:
             if os.path.exists(config_file):
                 self.load_config_from_file(config_file)
-            raise FileNotFoundError(f"Config file {config_file} does not exist.")
+            else:
+                raise FileNotFoundError(f"Config file {config_file} does not exist.")
         elif os.path.exists("config.ini"):
             self.load_config_from_file("config.ini")
         else:
@@ -187,6 +193,7 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
             )
             if firebase_enabled:
                 await app_config.load_config_from_firebase(bot_user_id)
+                logging.info("Override configuration with Firebase settings")
 
             logger.info("Analyzing sentiment of the user message for emoji reaction")
             emoji_reactions = await analyze_sentiment(message_text, app_config.config)
