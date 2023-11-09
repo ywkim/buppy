@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import csv
+import json
 import logging
 import os
 import re
@@ -11,11 +11,11 @@ from configparser import ConfigParser
 from typing import Any
 
 import emoji_data_python
+from google.cloud import firestore
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
-from google.cloud import firestore
 
 ERROR_EMOJI = "bangbang"
 EXCLUDED_EMOJIS = ["eyes", ERROR_EMOJI]
@@ -98,7 +98,17 @@ class AppConfig:
             ), f"Missing configuration for {setting}"
 
     async def load_config_from_firebase(self, bot_user_id: str) -> None:
-        """Load configuration from Firebase Firestore."""
+        """
+        Load configuration from Firebase Firestore. Uses default values from DEFAULT_CONFIG
+        if certain configuration values are missing, except for 'prefix_messages_content',
+        which defaults to None.
+
+        Args:
+            bot_user_id (str): The unique identifier for the bot.
+
+        Raises:
+            FileNotFoundError: If the bot or companion document does not exist in Firebase.
+        """
         db = firestore.AsyncClient()
         bot_ref = db.collection("Bots").document(bot_user_id)
         bot = await bot_ref.get()
@@ -114,18 +124,35 @@ class AppConfig:
                 f"Companion with ID {companion_id} does not exist in Firebase."
             )
 
-        self.config.read_dict(
-            {
-                "settings": {
-                    "chat_model": companion.get("chat_model"),
-                    "system_prompt": companion.get("system_prompt"),
-                    "temperature": companion.get("temperature"),
-                    "prefix_messages_content": json.dumps(
-                        companion.get("prefix_messages_content")
-                    ),
-                },
-            }
-        )
+        # Retrieve settings and use defaults if necessary
+        settings = {
+            "chat_model": (
+                safely_get_field(
+                    companion, "chat_model", DEFAULT_CONFIG["settings"]["chat_model"]
+                )
+            ),
+            "system_prompt": (
+                safely_get_field(
+                    companion,
+                    "system_prompt",
+                    DEFAULT_CONFIG["settings"]["system_prompt"],
+                )
+            ),
+            "temperature": (
+                safely_get_field(
+                    companion, "temperature", DEFAULT_CONFIG["settings"]["temperature"]
+                )
+            ),
+        }
+
+        # Add 'prefix_messages_content' only if it exists
+        prefix_messages_content = safely_get_field(companion, "prefix_messages_content")
+        if prefix_messages_content is not None:
+            settings["prefix_messages_content"] = json.dumps(prefix_messages_content)
+
+        # Apply the new configuration settings
+        self.config.read_dict({"settings": settings})
+
         logging.info(
             "Configuration loaded from Firebase Firestore for bot %s", bot_user_id
         )
@@ -144,6 +171,34 @@ class AppConfig:
             self.load_config_from_env_vars()
 
         self._validate_config()
+
+
+def safely_get_field(
+    document: firestore.DocumentSnapshot,
+    field_path: str,
+    default: (Any | None) = None,
+) -> Any:
+    """
+    Safely retrieves a value from the document snapshot of Firestore using a
+    field path. Returns a default value if the field path
+    does not exist within the document.
+
+    Args:
+        document (DocumentSnapshot): The snapshot of the Firestore document.
+        field_path (str): A dot-delimited path to a field in the Firestore document.
+        default (Optional[Any]): The default value to return if the field doesn't exist.
+
+    Returns:
+        Any: The value retrieved from the document for the field path, if it exists;
+             otherwise, the default value.
+    """
+    try:
+        value = document.get(field_path)
+        if value is None:
+            return default
+        return value
+    except KeyError:
+        return default
 
 
 def init_chat_model(config: ConfigParser) -> ChatOpenAI:
