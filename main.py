@@ -174,6 +174,20 @@ class AppConfig:
 
         self._validate_config()
 
+    def get_readable_config(self) -> str:
+        """
+        Retrieves a human-readable string of the current non-sensitive configuration.
+
+        Returns:
+            str: A string representing the current configuration excluding sensitive details.
+        """
+        readable_config = (
+            f"Chat Model: {self.config.get('settings', 'chat_model')}\n"
+            f"System Prompt: {self.config.get('settings', 'system_prompt')}\n"
+            f"Temperature: {self.config.get('settings', 'temperature')}"
+        )
+        return readable_config
+
 
 def custom_serializer(obj: Any) -> str:
     """직렬화를 위한 사용자 정의 함수.
@@ -351,6 +365,27 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
             name="eyes", channel=channel_id, timestamp=ts
         )
         logger.info(f"Remove reaction to the message: {response}")
+
+    @app.command("/config")
+    async def handle_config_command(ack, body, say):
+        """
+        Handles the "/config" command which displays the current configuration settings
+        along with the bot user ID.
+
+        Args:
+            ack: Acknowledgment function to respond to the command invocation.
+            body: The request body of the command.
+            say: Function to send a message to the channel where the command was invoked.
+            logger: Logger instance to log information or errors.
+        """
+        await ack()
+        bot_user_id = body["authorizations"][0]["user_id"]
+
+        # Fetching readable configuration and adding bot user ID.
+        config_info = app_config.get_readable_config()
+        config_info += f"\nBot User ID: {bot_user_id}"
+
+        await say(f"Current Configuration:\n{config_info}")
 
 
 async def analyze_sentiment(message: str, config: ConfigParser) -> list[str]:
