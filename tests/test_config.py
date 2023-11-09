@@ -3,7 +3,7 @@ import os
 import unittest
 from unittest.mock import patch
 
-from main import load_config_from_env_vars
+from main import AppConfig
 
 
 class TestConfig(unittest.TestCase):
@@ -46,8 +46,9 @@ class TestConfig(unittest.TestCase):
                 "TEMPERATURE": "0",
             },
         ):
-            config = load_config_from_env_vars()
-            self.assertConfigStructure(config)
+            app_config = AppConfig()
+            app_config.load_config_from_env_vars()
+            self.assertConfigStructure(app_config.config)
 
     def assertConfigStructure(self, config: configparser.ConfigParser) -> None:
         """Assert that the loaded configuration has all the required sections and options"""
