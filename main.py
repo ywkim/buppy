@@ -173,6 +173,41 @@ class AppConfig:
         self._validate_config()
 
 
+def custom_serializer(obj: Any) -> str:
+    """직렬화를 위한 사용자 정의 함수.
+
+    Args:
+        obj (Any): 직렬화할 객체.
+
+    Returns:
+        str: 객체의 직렬화된 문자열 표현.
+
+    Raises:
+        TypeError: 직렬화할 수 없는 객체 타입일 경우.
+    """
+    if isinstance(obj, BaseMessage):
+        return f"{obj.__class__.__name__}({obj})"
+    if hasattr(obj, "__str__"):
+        return str(obj)
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
+
+def create_log_message(message: str, **kwargs: Any) -> str:
+    """로그 메시지 생성 및 JSON 형식으로 변환.
+
+    Args:
+        message (str): 로그 메시지.
+        **kwargs (Any): 추가 로그 매개변수.
+
+    Returns:
+        str: JSON 형식으로 변환된 로그 메시지.
+    """
+    log_entry = {"message": message, **kwargs}
+    return json.dumps(
+        log_entry, default=custom_serializer, ensure_ascii=False, indent=4
+    )
+
+
 def safely_get_field(
     document: firestore.DocumentSnapshot,
     field_path: str,
@@ -214,7 +249,8 @@ def init_chat_model(config: ConfigParser) -> ChatOpenAI:
 def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
     @app.event("message")
     async def handle_message_events(body, logger):
-        logger.info(body)
+        formatted_body = json.dumps(body, ensure_ascii=False, indent=4)
+        logger.debug(formatted_body)
 
     @app.event("app_mention")
     async def handle_mention_events(
@@ -233,7 +269,13 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
         bot_user_id = body["authorizations"][0]["user_id"]
         message_text = event["text"].replace(f"<@{bot_user_id}>", "").strip()
 
-        logger.info(f"Received a question from {user}: {message_text}")
+        logger.info(
+            create_log_message(
+                "Received a question from user",
+                user_id=user,
+                message_text=message_text,
+            )
+        )
 
         # Acknowledge the incoming message with 'eyes' emoji
         reaction = await client.reactions_add(
@@ -269,9 +311,20 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
             thread_messages = thread_messages_response.get("messages", [])
 
             formatted_messages = format_messages(thread_messages, bot_user_id)
-            logger.info(f"Sending {formatted_messages} messages to OpenAI API")
+            logger.info(
+                create_log_message(
+                    "Sending messages to OpenAI API",
+                    messages=formatted_messages,
+                )
+            )
+
             response_message = await ask_question(formatted_messages, app_config.config)
-            logger.info(f"Received {response_message} from OpenAI API")
+            logger.info(
+                create_log_message(
+                    "Received response from OpenAI API",
+                    response_message=response_message,
+                )
+            )
 
             await say(text=response_message, thread_ts=thread_ts)
         except Exception:  # pylint: disable=broad-except
