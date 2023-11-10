@@ -1,13 +1,9 @@
 import argparse
 import configparser
+import os
 from google.cloud import firestore
 from prompt_toolkit import prompt
 from slack_bolt import App
-import os
-import csv
-import json
-from typing import List, Dict
-
 
 def get_bot_user_id(slack_bot_token: str) -> str:
     """
@@ -106,35 +102,41 @@ def main():
     config = configparser.ConfigParser()
     config.read(args.ini_file)
 
-    # Default values for Companion ID and Bot User ID
-    companion_id_default = os.path.basename(args.ini_file).split('.')[0]
-    bot_id_default = get_bot_user_id(config['api']['slack_bot_token'])
+    # Extract the base name without extension for default Companion ID
+    companion_id_default = os.path.splitext(os.path.basename(args.ini_file))[0]
+
+    # Initialize Firestore client with the specified project ID
+    db = firestore.Client(project='alola-discord-bots')
+
+    # Get default Bot User ID
+    bot_id_default = None
+    if 'slack_bot_token' in config['api']:
+        bot_id_default = get_bot_user_id(config['api']['slack_bot_token'])
 
     # Prompt for Companion ID and Bot ID
     companion_id = prompt("Enter Companion ID: ", default=companion_id_default)
-    bot_id = prompt("Enter Bot ID: ", default=bot_id_default)
-
-    # Firestore client initialization
-    db = firestore.Client()
+    bot_id = prompt("Enter Slack Bot ID (Optional): ", default=bot_id_default)
 
     # Prepare companion data
     companion_data = {
         "chat_model": config.get('settings', 'chat_model', fallback=None),
         "system_prompt": config.get('settings', 'system_prompt', fallback=None),
         "temperature": config.getfloat('settings', 'temperature', fallback=None),
-        "prefix_messages_content": load_prefix_messages_from_csv(config['settings']['message_file'])
     }
+    # Add 'prefix_messages_content' if 'message_file' is specified
+    if 'message_file' in config['settings']:
+        companion_data["prefix_messages_content"] = load_prefix_messages_from_csv(config['settings']['message_file'])
+
     # Remove fields that are None
     companion_data = {k: v for k, v in companion_data.items() if v is not None}
 
-    # Prepare bot data
-    bot_data = {
-        "CompanionId": companion_id
-    }
-
-    # Upload data to Firestore
+    # Upload companion data
     upload_companion_data(db, companion_id, companion_data)
-    upload_bot_data(db, bot_id, bot_data)
+
+    # Upload bot data if Bot ID is provided
+    if bot_id:
+        bot_data = {"CompanionId": companion_id}
+        upload_bot_data(db, bot_id, bot_data)
 
     print("Data upload completed successfully.")
 
