@@ -263,6 +263,14 @@ def init_chat_model(config: ConfigParser) -> ChatOpenAI:
 
 
 def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
+    """
+    Registers event handlers with the Slack application.
+
+    Args:
+        app (AsyncApp): The Slack application to which the event handlers will be registered.
+        app_config (AppConfig): The application configuration.
+    """
+
     @app.event("message")
     async def handle_message_events(body, logger):
         formatted_body = json.dumps(body, ensure_ascii=False, indent=4)
@@ -276,9 +284,12 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
         logger: logging.Logger,
     ) -> None:
         """
-        Handle events where the bot is mentioned.
-        Fetch the thread messages, format them and call the Chat API to get a response.
-        Then send the response to the thread.
+        Handles events where the bot is mentioned.
+
+        Args:
+            body (dict[str, Any]): The request body of the event.
+            say: Function to send a message to the channel where the event was invoked.
+            logger (logging.Logger): Logger for logging events.
         """
         event = body["event"]
         channel_id = event["channel"]
@@ -311,43 +322,59 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
                 await app_config.load_config_from_firebase(bot_user_id)
                 logging.info("Override configuration with Firebase settings")
 
-            logger.info("Analyzing sentiment of the user message for emoji reaction")
-            emoji_reactions = await analyze_sentiment(message_text, app_config.config)
-            emoji_reactions = [
-                emoji for emoji in emoji_reactions if emoji not in EXCLUDED_EMOJIS
-            ]
-            logger.info(f"Suggested emoji reactions are: {emoji_reactions}")
-
-            for emoji_reaction in emoji_reactions:
-                reaction_response = await client.reactions_add(
-                    name=emoji_reaction, channel=channel_id, timestamp=ts
+            # Check if the mention contains a request for the configuration.
+            if "config" in message_text.lower():
+                # Fetching readable configuration and adding bot user ID.
+                config_info = app_config.get_readable_config()
+                config_info += f"\nBot User ID: {bot_user_id}"
+                # Respond in thread with the configuration information.
+                await say(
+                    text=f"*Current Configuration*\n{config_info}", thread_ts=thread_ts
                 )
-                logger.info(f"Added emoji reaction: {reaction_response}")
-
-            thread_messages_response = await client.conversations_replies(
-                channel=channel_id, ts=thread_ts
-            )
-            thread_messages: list[dict[str, Any]] = thread_messages_response.get(
-                "messages", []
-            )
-
-            formatted_messages = format_messages(thread_messages, bot_user_id)
-            logger.info(
-                create_log_message(
-                    "Sending messages to OpenAI API",
-                    messages=formatted_messages,
+            else:
+                logger.info(
+                    "Analyzing sentiment of the user message for emoji reaction"
                 )
-            )
-
-            response_message = await ask_question(formatted_messages, app_config.config)
-            logger.info(
-                create_log_message(
-                    "Received response from OpenAI API",
-                    response_message=response_message,
+                emoji_reactions = await analyze_sentiment(
+                    message_text, app_config.config
                 )
-            )
+                emoji_reactions = [
+                    emoji for emoji in emoji_reactions if emoji not in EXCLUDED_EMOJIS
+                ]
+                logger.info(f"Suggested emoji reactions are: {emoji_reactions}")
 
-            await say(text=response_message, thread_ts=thread_ts)
+                for emoji_reaction in emoji_reactions:
+                    reaction_response = await client.reactions_add(
+                        name=emoji_reaction, channel=channel_id, timestamp=ts
+                    )
+                    logger.info(f"Added emoji reaction: {reaction_response}")
+
+                thread_messages_response = await client.conversations_replies(
+                    channel=channel_id, ts=thread_ts
+                )
+                thread_messages: list[dict[str, Any]] = thread_messages_response.get(
+                    "messages", []
+                )
+
+                formatted_messages = format_messages(thread_messages, bot_user_id)
+                logger.info(
+                    create_log_message(
+                        "Sending messages to OpenAI API",
+                        messages=formatted_messages,
+                    )
+                )
+
+                response_message = await ask_question(
+                    formatted_messages, app_config.config
+                )
+                logger.info(
+                    create_log_message(
+                        "Received response from OpenAI API",
+                        response_message=response_message,
+                    )
+                )
+
+                await say(text=response_message, thread_ts=thread_ts)
         except Exception:  # pylint: disable=broad-except
             logger.error("Error handling app_mention event: ", exc_info=True)
             await say(
@@ -365,27 +392,6 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
             name="eyes", channel=channel_id, timestamp=ts
         )
         logger.info(f"Remove reaction to the message: {response}")
-
-    @app.command("/config")
-    async def handle_config_command(ack, body, say):
-        """
-        Handles the "/config" command which displays the current configuration settings
-        along with the bot user ID.
-
-        Args:
-            ack: Acknowledgment function to respond to the command invocation.
-            body: The request body of the command.
-            say: Function to send a message to the channel where the command was invoked.
-            logger: Logger instance to log information or errors.
-        """
-        await ack()
-        bot_user_id = body["authorizations"][0]["user_id"]
-
-        # Fetching readable configuration and adding bot user ID.
-        config_info = app_config.get_readable_config()
-        config_info += f"\nBot User ID: {bot_user_id}"
-
-        await say(f"Current Configuration:\n{config_info}")
 
 
 async def analyze_sentiment(message: str, config: ConfigParser) -> list[str]:
