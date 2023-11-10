@@ -496,6 +496,13 @@ async def main():
     bot_user_id = bot_auth_info["user_id"]
     logging.info("Bot User ID is %s", bot_user_id)
 
+    firebase_enabled = app_config.config.getboolean(
+        "firebase", "enabled", fallback=False
+    )
+    if firebase_enabled:
+        await app_config.load_config_from_firebase(bot_user_id)
+        logging.info("Override configuration with Firebase settings")
+
     logging.info("Registering event and command handlers")
     register_events_and_commands(app, app_config)
 
