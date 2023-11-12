@@ -1,6 +1,8 @@
 import unittest
-from unittest.mock import patch, Mock
-from upload_companion import upload_companion_data, upload_bot_data, document_exists
+from unittest.mock import Mock, patch
+
+from upload_companion import document_exists, upload_bot_data, upload_companion_data
+
 
 class TestUploadCompanion(unittest.TestCase):
     def setUp(self):
@@ -8,9 +10,12 @@ class TestUploadCompanion(unittest.TestCase):
 
     def test_upload_companion_data(self):
         """Companion 데이터 업로드 테스트"""
-        with patch('main.firestore.Client', return_value=self.mock_db):
+        with patch("main.firestore.Client", return_value=self.mock_db):
             companion_id = "test_companion"
-            companion_data = {"chat_model": "gpt-4", "system_prompt": "You are a helpful assistant."}
+            companion_data = {
+                "chat_model": "gpt-4",
+                "system_prompt": "You are a helpful assistant.",
+            }
             upload_companion_data(self.mock_db, companion_id, companion_data)
             self.mock_db.collection.assert_called_with("Companions")
             self.mock_db.collection().document.assert_called_with(companion_id)
@@ -18,7 +23,7 @@ class TestUploadCompanion(unittest.TestCase):
 
     def test_upload_bot_data(self):
         """Bot 데이터 업로드 테스트"""
-        with patch('main.firestore.Client', return_value=self.mock_db):
+        with patch("main.firestore.Client", return_value=self.mock_db):
             bot_id = "test_bot"
             bot_data = {"CompanionId": "test_companion"}
             upload_bot_data(self.mock_db, bot_id, bot_data)
@@ -28,11 +33,14 @@ class TestUploadCompanion(unittest.TestCase):
 
     def test_document_exists(self):
         """Firestore 문서 존재 여부 테스트"""
-        with patch('main.firestore.Client', return_value=self.mock_db):
+        with patch("main.firestore.Client", return_value=self.mock_db):
             self.mock_db.collection().document().get().exists = True
             self.assertTrue(document_exists(self.mock_db, "Companions", "existing_doc"))
             self.mock_db.collection().document().get().exists = False
-            self.assertFalse(document_exists(self.mock_db, "Companions", "non_existing_doc"))
+            self.assertFalse(
+                document_exists(self.mock_db, "Companions", "non_existing_doc")
+            )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
