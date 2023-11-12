@@ -1,5 +1,7 @@
 import argparse
 import configparser
+import csv
+import json
 import os
 from google.cloud import firestore
 from prompt_toolkit import prompt
@@ -149,6 +151,11 @@ def main():
     upload_companion_data(db, companion_id, companion_data)
     if document_exists(db, "Companions", companion_id):
         print(f"Companion data for '{companion_id}' uploaded successfully.")
+        for key, value in companion_data.items():
+            if key == "prefix_messages_content":
+                print(f"  - {key}: {len(json.loads(value))} messages uploaded")
+            else:
+                print(f"  - {key}: {value}")
     else:
         print(f"Failed to upload companion data for '{companion_id}'.")
 
