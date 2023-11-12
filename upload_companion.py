@@ -93,6 +93,21 @@ def upload_bot_data(db: firestore.Client, bot_id: str, bot_data: dict):
     bots_ref = db.collection("Bots")
     bots_ref.document(bot_id).set(bot_data)
 
+def document_exists(db: firestore.Client, collection: str, document_id: str) -> bool:
+    """
+    Check if a document exists in the specified Firestore collection.
+
+    Args:
+        db (firestore.Client): Firestore client instance.
+        collection (str): The name of the collection.
+        document_id (str): The ID of the document to check.
+
+    Returns:
+        bool: True if the document exists, False otherwise.
+    """
+    doc_ref = db.collection(collection).document(document_id)
+    return doc_ref.get().exists
+
 def main():
     parser = argparse.ArgumentParser(description="Upload companion and bot data to Firestore.")
     parser.add_argument('ini_file', type=str, help='Path to the INI configuration file.')
@@ -132,11 +147,19 @@ def main():
 
     # Upload companion data
     upload_companion_data(db, companion_id, companion_data)
+    if document_exists(db, "Companions", companion_id):
+        print(f"Companion data for '{companion_id}' uploaded successfully.")
+    else:
+        print(f"Failed to upload companion data for '{companion_id}'.")
 
     # Upload bot data if Bot ID is provided
     if bot_id:
         bot_data = {"CompanionId": companion_id}
         upload_bot_data(db, bot_id, bot_data)
+        if document_exists(db, "Bots", bot_id):
+            print(f"Bot data for '{bot_id}' uploaded successfully.")
+        else:
+            print(f"Failed to upload bot data for '{bot_id}'.")
 
     print("Data upload completed successfully.")
 
