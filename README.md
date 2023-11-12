@@ -56,9 +56,19 @@ OpenAI의 API Key는 [OpenAI 플랫폼](https://platform.openai.com/account/api-
 
 Poetry를 사용하여 아래 명령어로 코드를 실행할 수 있습니다:
 
+#### Buppy 실행
+
 ```
 poetry run python main.py
 ```
+
+#### `upload_companion.py` 스크립트 실행
+
+```
+poetry run python upload_companion.py path/to/config.ini
+```
+
+여기서 `path/to/config.ini`는 `config.ini` 파일의 경로를 나타냅니다. 이 스크립트는 Firestore에 Companion 및 Bot 데이터를 업로드하는 데 사용됩니다.
 
 ### Slack 봇 설정
 
