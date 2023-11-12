@@ -135,7 +135,7 @@ def main():
     db = firestore.Client(project="alola-discord-bots")
 
     # Get default Bot User ID
-    bot_id_default = None
+    bot_id_default = ""
     if "slack_bot_token" in config["api"]:
         bot_id_default = get_bot_user_id(config["api"]["slack_bot_token"])
 
