@@ -165,6 +165,8 @@ def main():
         upload_bot_data(db, bot_id, bot_data)
         if document_exists(db, "Bots", bot_id):
             print(f"Bot data for '{bot_id}' uploaded successfully.")
+            for key, value in bot_data.items():
+                print(f"  - {key}: {value}")
         else:
             print(f"Failed to upload bot data for '{bot_id}'.")
 
