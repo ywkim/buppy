@@ -32,6 +32,16 @@ Buppy를 실행하기 위한 라이브러리를 설치합니다. 라이브러리
 poetry install
 ```
 
+### Google Cloud 사용자 인증
+
+`upload_companion.py` 스크립트를 사용하기 전에, Google Cloud 사용자 인증을 완료해야 합니다. Google Cloud SDK를 설치하고 다음 명령어를 사용하여 인증하세요:
+
+```
+gcloud auth login
+```
+
+이 명령어는 기본 웹 브라우저를 열고 Google 계정으로 로그인하라는 요청을 합니다. 로그인을 완료하면 필요한 인증 정보가 로컬 시스템에 저장되며, `upload_companion.py` 스크립트에서 해당 인증 정보를 사용할 수 있습니다.
+
 ### config.ini 설정
 
 아래 설정 예제와 같이 `config.ini` 파일을 작성해 주세요:
