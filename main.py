@@ -288,6 +288,7 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
 
         Args:
             body (dict[str, Any]): The request body of the event.
+            client: The Slack client instance used for making API calls.
             say: Function to send a message to the channel where the event was invoked.
             logger (logging.Logger): Logger for logging events.
         """
