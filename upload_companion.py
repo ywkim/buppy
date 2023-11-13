@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import configparser
 import csv
-import json
 import os
 
 from google.cloud import firestore
@@ -26,37 +25,35 @@ def get_bot_user_id(slack_bot_token: str) -> str:
     return response["user_id"]
 
 
-def load_prefix_messages_from_csv(file_path: str) -> str:
+def load_prefix_messages_from_csv(file_path: str) -> list[dict[str, str]]:
     """
-    Load prefix messages from a CSV file and return them as a JSON string.
+    Load prefix messages from a CSV file and return them as a list of dictionaries.
 
     This function reads a CSV file containing messages with their roles and
     content. It then converts these messages into a format suitable for storing
-    in Firestore, specifically as a JSON string of message objects.
+    directly in Firestore.
 
     Each message object in the CSV file should have a role ('AI', 'Human', 'System')
-    and content. These roles are converted to their corresponding roles ('assistant',
-    'user', 'system') in the Firestore format.
+    and content. These roles are converted to their corresponding roles in the Firestore.
 
     Args:
         file_path (str): The path to the CSV file containing the prefix messages.
 
     Returns:
-        str: A JSON string representing the list of messages.
+        list[dict[str, str]]: A list of dictionaries representing the messages.
 
     Raises:
         FileNotFoundError: If the CSV file is not found at the specified path.
         ValueError: If an invalid role is encountered in the CSV file.
     """
 
-    # Role mappings from CSV to Firestore format
+    # Define the mapping of CSV roles to Firestore roles
     role_mappings = {"AI": "assistant", "Human": "user", "System": "system"}
 
-    # Read the CSV file and convert each row into a message object
+    messages: list[dict[str, str]] = []
+
     with open(file_path, mode="r", encoding="utf-8") as file:
         reader = csv.reader(file)
-        messages: list[dict[str, str]] = []
-
         for row in reader:
             role, content = row
             if role not in role_mappings:
@@ -67,8 +64,7 @@ def load_prefix_messages_from_csv(file_path: str) -> str:
             firestore_role = role_mappings[role]
             messages.append({"role": firestore_role, "content": content})
 
-    # Convert the list of message objects to a JSON string
-    return json.dumps(messages)
+    return messages
 
 
 def upload_companion_data(
@@ -164,7 +160,7 @@ def main():
         print(f"Companion data for '{companion_id}' uploaded successfully.")
         for key, value in companion_data.items():
             if key == "prefix_messages_content":
-                print(f"  - {key}: {len(json.loads(value))} messages uploaded")
+                print(f"  - {key}: {len(value)} messages uploaded")
             else:
                 print(f"  - {key}: {value}")
     else:
