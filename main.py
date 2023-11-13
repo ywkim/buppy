@@ -313,7 +313,9 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
             thread_messages_response = await client.conversations_replies(
                 channel=channel_id, ts=thread_ts
             )
-            thread_messages = thread_messages_response.get("messages", [])
+            thread_messages: list[dict[str, Any]] = thread_messages_response.get(
+                "messages", []
+            )
 
             formatted_messages = format_messages(thread_messages, bot_user_id)
             logger.info(
