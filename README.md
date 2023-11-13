@@ -34,13 +34,13 @@ poetry install
 
 ### Google Cloud 사용자 인증
 
-`upload_companion.py` 스크립트를 사용하기 전에, Google Cloud 사용자 인증을 완료해야 합니다. Google Cloud SDK를 설치하고 다음 명령어를 사용하여 인증하세요:
+`upload_companion.py` 스크립트를 사용하기 전에, 애플리케이션 기본 인증을 위해 Google Cloud 사용자 인증을 완료해야 합니다. Google Cloud SDK를 설치하고 다음 명령어를 사용하여 인증하세요:
 
 ```
-gcloud auth login
+gcloud auth application-default login
 ```
 
-이 명령어는 기본 웹 브라우저를 열고 Google 계정으로 로그인하라는 요청을 합니다. 로그인을 완료하면 필요한 인증 정보가 로컬 시스템에 저장되며, `upload_companion.py` 스크립트에서 해당 인증 정보를 사용할 수 있습니다.
+이 명령어는 기본 웹 브라우저를 열고 Google 계정으로 로그인하라는 요청을 합니다. 로그인을 완료하면 애플리케이션에서 필요한 인증 정보가 로컬 시스템에 저장되며, `upload_companion.py` 스크립트에서 해당 인증 정보를 사용할 수 있습니다. Google Cloud SDK에 대한 자세한 정보는 [여기](https://cloud.google.com/sdk/docs/install)에서 확인할 수 있습니다.
 
 ### config.ini 설정
 
