@@ -56,8 +56,7 @@ jobs:
         cluster_name: ${{ env.GKE_CLUSTER }}
         location: ${{ env.GKE_ZONE }}
 
-    # Deploy the Docker image to the GKE cluster
-    - name: Deploy bot
+    - name: Deploy bot ID A05UJV11ZUM
       run: |-
         helm upgrade slack-bot ./charts/bot \
           --install \
@@ -69,4 +68,18 @@ jobs:
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
           --set slackBotToken=${{ secrets.SLACK_BOT_TOKEN }} \
           --set slackAppToken=${{ secrets.SLACK_APP_TOKEN }}
+        kubectl get services -o wide
+
+    - name: Deploy bot ID U060YNQLWAJ
+      run: |-
+        helm upgrade slack-bot ./charts/bot \
+          --install \
+          --atomic \
+          --wait \
+          --namespace u060ynqlwaj \
+          --create-namespace \
+          --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
+          --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
+          --set slackBotToken=${{ secrets.SLACK_BOT_TOKEN_U060YNQLWAJ }} \
+          --set slackAppToken=${{ secrets.SLACK_APP_TOKEN_U060YNQLWAJ }}
         kubectl get services -o wide
