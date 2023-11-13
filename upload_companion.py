@@ -139,17 +139,20 @@ def main():
     companion_id = prompt("Enter Companion ID: ", default=companion_id_default)
     bot_id = prompt("Enter Slack Bot ID (Optional): ", default=bot_id_default)
 
+    # Add 'prefix_messages_content' if 'message_file' is specified
+    prefix_messages = None
+    if "message_file" in config["settings"]:
+        prefix_messages = load_prefix_messages_from_csv(
+            config["settings"]["message_file"]
+        )
+
     # Prepare companion data
     companion_data = {
         "chat_model": config.get("settings", "chat_model", fallback=None),
         "system_prompt": config.get("settings", "system_prompt", fallback=None),
         "temperature": config.getfloat("settings", "temperature", fallback=None),
+        "prefix_messages_content": prefix_messages,
     }
-    # Add 'prefix_messages_content' if 'message_file' is specified
-    if "message_file" in config["settings"]:
-        companion_data["prefix_messages_content"] = load_prefix_messages_from_csv(
-            config["settings"]["message_file"]
-        )
 
     # Remove fields that are None
     companion_data = {k: v for k, v in companion_data.items() if v is not None}
@@ -160,6 +163,7 @@ def main():
         print(f"Companion data for '{companion_id}' uploaded successfully.")
         for key, value in companion_data.items():
             if key == "prefix_messages_content":
+                assert isinstance(value, list)
                 print(f"  - {key}: {len(value)} messages uploaded")
             else:
                 print(f"  - {key}: {value}")
