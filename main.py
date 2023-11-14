@@ -251,15 +251,15 @@ def safely_get_field(
     except KeyError:
         return default
 
-def extract_image_url(message: dict) -> Optional[str]:
+def extract_image_url(message: dict[str, Any]) -> Optional[str]:
     """
-    Slack 메시지에서 이미지 URL을 추출합니다.
+    Extracts the image URL from a Slack message object.
 
     Args:
-        message (dict): Slack 메시지 데이터.
+    message (dict[str, Any]): The Slack message object.
 
     Returns:
-        Optional[str]: 추출된 이미지 URL. 이미지가 없으면 None을 반환합니다.
+    Optional[str]: The extracted image URL if present, otherwise None.
     """
     if "files" in message:
         for file in message["files"]:
@@ -429,7 +429,7 @@ def get_valid_emoji_codes(input_string: str) -> list[str]:
         input_string (str): A string that may contain emoji codes.
 
     Returns:
-        List[str]: A list of the valid emoji codes found in the input_string, without colons.
+        list[str]: A list of the valid emoji codes found in the input_string, without colons.
     """
 
     # Find all substrings in the input_string that match the emoji code pattern.
@@ -460,12 +460,16 @@ def is_valid_emoji_code(input_code: str) -> bool:
     return input_code in emoji_data_python.emoji_short_names
 
 
-def format_messages(
-    thread_messages: list[dict[str, Any]], bot_user_id: str
-) -> list[BaseMessage]:
+def format_messages(thread_messages: list[dict[str, Any]], bot_user_id: str) -> list[BaseMessage]:
     """
-    Format messages in a thread. Messages from the bot (designated by bot_user_id)
-    are considered as messages from the 'assistant' and everything else as from the 'user'.
+    Formats messages from a Slack thread into a list of HumanMessage objects.
+
+    Args:
+    thread_messages (list[dict[str, Any]]): list of messages from the Slack thread.
+    bot_user_id (str): The user ID of the bot.
+
+    Returns:
+    list[HumanMessage]: A list of formatted HumanMessage objects.
     """
     # Check if the messages are sorted in ascending order by 'ts'
     assert all(
@@ -475,18 +479,25 @@ def format_messages(
 
     formatted_messages: list[BaseMessage] = []
 
-    for message in thread_messages:
-        role = "assistant" if message.get("user") == bot_user_id else "user"
-        text_content = message.get("text", "")
-        image_url = extract_image_url(message)
+    for msg in thread_messages:
+        role = "assistant" if msg.get("user") == bot_user_id else "user"
+        text_content = msg.get("text", "")
+        image_url = extract_image_url(msg)
 
-        content = [{"type": "text", "text": text_content}]
+        message_content = []
+
+        text_content = text_content.replace(f"<@{bot_user_id}>", "").strip()
+
+        # Append text content to message_content
+        if text_content:
+            message_content.append({"type": "text", "text": text_content})
+
+        # Append image URL to message_content
         if image_url:
-            content.append({"type": "image_url", "image_url": {"url": image_url}})
+            message_content.append({"type": "image_url", "image_url": {"url": image_url}})
 
         if role == "user":
-            content = content.replace(f"<@{bot_user_id}>", "").strip()
-            formatted_messages.append(HumanMessage(content=content))
+            formatted_messages.append(HumanMessage(content=message_content))
         else:
             formatted_messages.append(AIMessage(content=text_content))
 
