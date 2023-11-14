@@ -251,6 +251,21 @@ def safely_get_field(
     except KeyError:
         return default
 
+def extract_image_url(message: dict) -> Optional[str]:
+    """
+    Slack 메시지에서 이미지 URL을 추출합니다.
+
+    Args:
+        message (dict): Slack 메시지 데이터.
+
+    Returns:
+        Optional[str]: 추출된 이미지 URL. 이미지가 없으면 None을 반환합니다.
+    """
+    if "files" in message:
+        for file in message["files"]:
+            if file["mimetype"].startswith("image/"):
+                return file["url"]
+    return None
 
 def init_chat_model(config: ConfigParser) -> ChatOpenAI:
     """Initialize the langchain chat model."""
@@ -460,14 +475,20 @@ def format_messages(
 
     formatted_messages: list[BaseMessage] = []
 
-    for msg in thread_messages:
-        role = "assistant" if msg.get("user") == bot_user_id else "user"
-        content = msg["text"]
+    for message in thread_messages:
+        role = "assistant" if message.get("user") == bot_user_id else "user"
+        text_content = message.get("text", "")
+        image_url = extract_image_url(message)
+
+        content = [{"type": "text", "text": text_content}]
+        if image_url:
+            content.append({"type": "image_url", "image_url": {"url": image_url}})
+
         if role == "user":
             content = content.replace(f"<@{bot_user_id}>", "").strip()
             formatted_messages.append(HumanMessage(content=content))
         else:
-            formatted_messages.append(AIMessage(content=content))
+            formatted_messages.append(AIMessage(content=text_content))
 
     return formatted_messages
 
