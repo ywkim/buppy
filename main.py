@@ -251,6 +251,7 @@ def safely_get_field(
     except KeyError:
         return default
 
+
 def extract_image_url(message: dict[str, Any]) -> Optional[str]:
     """
     Extracts the image URL from a Slack message object.
@@ -266,6 +267,7 @@ def extract_image_url(message: dict[str, Any]) -> Optional[str]:
             if file["mimetype"].startswith("image/"):
                 return file["url"]
     return None
+
 
 def init_chat_model(config: ConfigParser) -> ChatOpenAI:
     """Initialize the langchain chat model."""
@@ -460,7 +462,9 @@ def is_valid_emoji_code(input_code: str) -> bool:
     return input_code in emoji_data_python.emoji_short_names
 
 
-def format_messages(thread_messages: list[dict[str, Any]], bot_user_id: str) -> list[BaseMessage]:
+def format_messages(
+    thread_messages: list[dict[str, Any]], bot_user_id: str
+) -> list[BaseMessage]:
     """
     Formats messages from a Slack thread into a list of HumanMessage objects.
 
@@ -494,7 +498,9 @@ def format_messages(thread_messages: list[dict[str, Any]], bot_user_id: str) -> 
 
         # Append image URL to message_content
         if image_url:
-            message_content.append({"type": "image_url", "image_url": {"url": image_url}})
+            message_content.append(
+                {"type": "image_url", "image_url": {"url": image_url}}
+            )
 
         if role == "user":
             formatted_messages.append(HumanMessage(content=message_content))
