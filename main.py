@@ -211,19 +211,37 @@ class AppConfig:
 
 
 def custom_serializer(obj: Any) -> str:
-    """직렬화를 위한 사용자 정의 함수.
+    """Custom serialization function for logging.
 
     Args:
-        obj (Any): 직렬화할 객체.
+        obj (Any): Object to be serialized.
 
     Returns:
-        str: 객체의 직렬화된 문자열 표현.
+        str: Serialized string representation of the object.
 
     Raises:
-        TypeError: 직렬화할 수 없는 객체 타입일 경우.
+        TypeError: If the object type cannot be serialized.
     """
     if isinstance(obj, BaseMessage):
-        return f"{obj.__class__.__name__}({obj})"
+        content = obj.content
+        # Check if content is a list and contains base64 image data
+        if isinstance(content, list):
+            serialized_content = []
+            for item in content:
+                if isinstance(item, dict) and "image_url" in item:
+                    # Shorten the base64 image data for logging
+                    img_data = item["image_url"]["url"]
+                    shortened_img_data = (
+                        (img_data[:30] + "...") if len(img_data) > 30 else img_data
+                    )
+                    serialized_content.append(
+                        {"image_url": {"url": shortened_img_data}}
+                    )
+                else:
+                    serialized_content.append(item)
+            return f"{obj.__class__.__name__}({serialized_content})"
+        else:
+            return f"{obj.__class__.__name__}({content})"
     if hasattr(obj, "__str__"):
         return str(obj)
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
@@ -551,7 +569,7 @@ async def format_messages(
     for msg in thread_messages:
         role = "assistant" if msg.get("user") == bot_user_id else "user"
         text_content = msg.get("text", "").replace(f"<@{bot_user_id}>", "").strip()
-        message_content: list[dict[str, Any]] = []
+        message_content: list[str | dict[str, Any]] = []
 
         # Append text content to message_content
         if text_content:
