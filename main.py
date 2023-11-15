@@ -9,7 +9,7 @@ import logging
 import os
 import re
 from configparser import ConfigParser
-from typing import Any, Union
+from typing import Any
 
 import aiohttp
 import emoji_data_python
@@ -551,7 +551,7 @@ async def format_messages(
     for msg in thread_messages:
         role = "assistant" if msg.get("user") == bot_user_id else "user"
         text_content = msg.get("text", "").replace(f"<@{bot_user_id}>", "").strip()
-        message_content: list[Union[str, dict[str, Any]]] = []
+        message_content: list[str | dict[str, Any]] = []
 
         # Append text content to message_content
         if text_content:
