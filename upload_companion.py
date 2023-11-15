@@ -151,6 +151,9 @@ def main():
         "chat_model": config.get("settings", "chat_model", fallback=None),
         "system_prompt": config.get("settings", "system_prompt", fallback=None),
         "temperature": config.getfloat("settings", "temperature", fallback=None),
+        "vision_enabled": config.getboolean(
+            "settings", "vision_enabled", fallback=None
+        ),
         "prefix_messages_content": prefix_messages,
     }
 
