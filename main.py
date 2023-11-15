@@ -353,6 +353,7 @@ def init_chat_model(config: ConfigParser) -> ChatOpenAI:
         model=config.get("settings", "chat_model"),
         temperature=float(config.get("settings", "temperature")),
         openai_api_key=config.get("api", "openai_api_key"),
+        max_tokens=4095,
     )  # type: ignore
     return chat
 
