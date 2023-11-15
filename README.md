@@ -90,6 +90,7 @@ https://api.slack.com/apps
 - `channels:history`: 앱이 채널의 메시지 기록을 읽을 수 있게 합니다.
 - `chat:write`: 앱이 채널에 메시지를 전송할 수 있게 합니다.
 - `reactions:write`: 앱이 메시지에 이모티콘을 달 수 있게 합니다.
+- `files:read`: 앱이 Slack에서 공유된 파일의 정보를 읽을 수 있게 합니다.
 
 #### 앱 설치와 봇 토큰 복사
 

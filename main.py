@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import csv
 import json
 import logging
@@ -10,7 +11,9 @@ import re
 from configparser import ConfigParser
 from typing import Any
 
+import aiohttp
 import emoji_data_python
+from aiohttp import ClientError
 from google.cloud import firestore
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -27,6 +30,7 @@ DEFAULT_CONFIG = {
         "chat_model": "gpt-4",
         "system_prompt": "You are a helpful assistant.",
         "temperature": "0",
+        "vision_enabled": "false",
     },
     "firebase": {"enabled": "false"},
 }
@@ -49,6 +53,11 @@ class AppConfig:
         """Initialize AppConfig."""
         self.config: ConfigParser = ConfigParser()
         self.config.read_dict(DEFAULT_CONFIG)
+
+    @property
+    def vision_enabled(self) -> bool:
+        """Determines if vision (image analysis) feature is enabled."""
+        return self.config.getboolean("settings", "vision_enabled", fallback=False)
 
     def load_config_from_file(self, config_file: str) -> None:
         """Load configuration from a given file path."""
@@ -73,6 +82,10 @@ class AppConfig:
                 "temperature": os.environ.get(
                     "TEMPERATURE", DEFAULT_CONFIG["settings"]["temperature"]
                 ),
+                "vision_enabled": os.environ.get(
+                    "VISION_ENABLED", DEFAULT_CONFIG["settings"]["vision_enabled"]
+                ).lower()
+                in {"true", "1", "yes"},
             },
             "firebase": {
                 "enabled": os.environ.get(
@@ -145,6 +158,13 @@ class AppConfig:
                     companion, "temperature", DEFAULT_CONFIG["settings"]["temperature"]
                 )
             ),
+            "vision_enabled": (
+                safely_get_field(
+                    companion,
+                    "vision_enabled",
+                    DEFAULT_CONFIG["settings"]["vision_enabled"],
+                )
+            ),
         }
 
         # Add 'prefix_messages_content' only if it exists
@@ -184,7 +204,8 @@ class AppConfig:
         readable_config = (
             f"Chat Model: {self.config.get('settings', 'chat_model')}\n"
             f"System Prompt: {self.config.get('settings', 'system_prompt')}\n"
-            f"Temperature: {self.config.get('settings', 'temperature')}"
+            f"Temperature: {self.config.get('settings', 'temperature')}\n"
+            f"Vision Enabled: {'Yes' if self.vision_enabled else 'No'}"
         )
         return readable_config
 
@@ -252,7 +273,7 @@ def safely_get_field(
         return default
 
 
-def extract_image_url(message: dict[str, Any]) -> Optional[str]:
+def extract_image_url(message: dict[str, Any]) -> str | None:
     """
     Extracts the image URL from a Slack message object.
 
@@ -265,7 +286,47 @@ def extract_image_url(message: dict[str, Any]) -> Optional[str]:
     if "files" in message:
         for file in message["files"]:
             if file["mimetype"].startswith("image/"):
-                return file["url"]
+                return file.get("url_private") or file.get("url_private_download")
+
+    return None
+
+
+async def download_image(url: str, token: str) -> bytes:
+    """
+    Asynchronously downloads an image from a given URL with Slack authorization.
+    Raises an exception if the download fails.
+
+    Args:
+    url (str): The URL of the image to download.
+    token (str): Slack API token for authorization.
+
+    Returns:
+    bytes: The raw bytes of the image.
+
+    Raises:
+    ClientError: If the download fails or the response status is not 200.
+    """
+    headers = {"Authorization": f"Bearer {token}"}
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers) as response:
+            if response.status != 200:
+                raise ClientError(f"Failed to download image: {response.status}")
+            return await response.read()
+
+
+def encode_image_to_base64(image_data: bytes) -> str | None:
+    """
+    Encodes image data to a Base64 string.
+
+    Args:
+    image_data (bytes): The raw bytes of the image.
+
+    Returns:
+    Optional[str]: The Base64 encoded string of the image, or None if the input is None.
+    """
+    if image_data is not None:
+        return base64.b64encode(image_data).decode("utf-8")
     return None
 
 
@@ -374,7 +435,9 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
                     "messages", []
                 )
 
-                formatted_messages = format_messages(thread_messages, bot_user_id)
+                formatted_messages = await format_messages(
+                    thread_messages, bot_user_id, app_config
+                )
                 logger.info(
                     create_log_message(
                         "Sending messages to OpenAI API",
@@ -462,18 +525,20 @@ def is_valid_emoji_code(input_code: str) -> bool:
     return input_code in emoji_data_python.emoji_short_names
 
 
-def format_messages(
-    thread_messages: list[dict[str, Any]], bot_user_id: str
+async def format_messages(
+    thread_messages: list[dict[str, Any]], bot_user_id: str, app_config: AppConfig
 ) -> list[BaseMessage]:
     """
-    Formats messages from a Slack thread into a list of HumanMessage objects.
+    Formats messages from a Slack thread into a list of HumanMessage objects,
+    downloading and encoding images as Base64 if enabled in the AppConfig.
 
     Args:
     thread_messages (list[dict[str, Any]]): list of messages from the Slack thread.
     bot_user_id (str): The user ID of the bot.
+    app_config (AppConfig): The application configuration object.
 
     Returns:
-    list[HumanMessage]: A list of formatted HumanMessage objects.
+    list[BaseMessage]: A list of formatted HumanMessage objects.
     """
     # Check if the messages are sorted in ascending order by 'ts'
     assert all(
@@ -485,22 +550,24 @@ def format_messages(
 
     for msg in thread_messages:
         role = "assistant" if msg.get("user") == bot_user_id else "user"
-        text_content = msg.get("text", "")
-        image_url = extract_image_url(msg)
-
+        text_content = msg.get("text", "").replace(f"<@{bot_user_id}>", "").strip()
         message_content = []
-
-        text_content = text_content.replace(f"<@{bot_user_id}>", "").strip()
 
         # Append text content to message_content
         if text_content:
             message_content.append({"type": "text", "text": text_content})
 
-        # Append image URL to message_content
-        if image_url:
-            message_content.append(
-                {"type": "image_url", "image_url": {"url": image_url}}
-            )
+        if app_config.vision_enabled:
+            image_url = extract_image_url(msg)
+            if image_url:
+                image_data = await download_image(image_url, app_config.bot_token)
+                base64_image = encode_image_to_base64(image_data)
+                message_content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+                    }
+                )
 
         if role == "user":
             formatted_messages.append(HumanMessage(content=message_content))
