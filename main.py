@@ -226,22 +226,21 @@ def custom_serializer(obj: Any) -> str:
         content = obj.content
         # Check if content is a list and contains base64 image data
         if isinstance(content, list):
-            serialized_content = []
+            serialized_content: list[str | dict[Any, Any]] = []
             for item in content:
-                if isinstance(item, dict) and "image_url" in item:
+                if isinstance(item, dict) and item["type"] == "image_url":
                     # Shorten the base64 image data for logging
                     img_data = item["image_url"]["url"]
                     shortened_img_data = (
                         (img_data[:30] + "...") if len(img_data) > 30 else img_data
                     )
                     serialized_content.append(
-                        {"image_url": {"url": shortened_img_data}}
+                        {"type": "image_url", "image_url": {"url": shortened_img_data}}
                     )
                 else:
                     serialized_content.append(item)
             return f"{obj.__class__.__name__}({serialized_content})"
-        else:
-            return f"{obj.__class__.__name__}({content})"
+        return f"{obj.__class__.__name__}({content})"
     if hasattr(obj, "__str__"):
         return str(obj)
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
