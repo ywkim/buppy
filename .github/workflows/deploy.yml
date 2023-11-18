@@ -10,6 +10,7 @@ env:
   GKE_CLUSTER: discord-bots
   GKE_ZONE: us-central1
   IMAGE: slack-bot
+  OPENAI_ORGANIZATION: org-kJ1nkbOSvAO5nCTrJmY3Nm4x
 
 jobs:
   setup-build-publish-deploy:
@@ -66,6 +67,7 @@ jobs:
           --create-namespace \
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
+          --set openaiOrganization=$OPENAI_ORGANIZATION \
           --set slackBotToken=${{ secrets.SLACK_BOT_TOKEN }} \
           --set slackAppToken=${{ secrets.SLACK_APP_TOKEN }}
         kubectl get services -o wide
@@ -80,6 +82,7 @@ jobs:
           --create-namespace \
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
+          --set openaiOrganization=$OPENAI_ORGANIZATION \
           --set slackBotToken=${{ secrets.SLACK_BOT_TOKEN_U060YNQLWAJ }} \
           --set slackAppToken=${{ secrets.SLACK_APP_TOKEN_U060YNQLWAJ }}
         kubectl get services -o wide
