@@ -69,7 +69,6 @@ class AppConfig:
         env_config: dict[str, dict[str, Any]] = {
             "api": {
                 "openai_api_key": os.environ.get("OPENAI_API_KEY"),
-                "openai_organization": os.environ.get("OPENAI_ORGANIZATION"),
                 "slack_bot_token": os.environ.get("SLACK_BOT_TOKEN"),
                 "slack_app_token": os.environ.get("SLACK_APP_TOKEN"),
             },
@@ -95,6 +94,11 @@ class AppConfig:
                 in {"true", "1", "yes"}
             },
         }
+
+        openai_org = os.environ.get("OPENAI_ORGANIZATION", None)
+        if openai_org is not None:
+            env_config["api"]["openai_organization"] = openai_org
+
         self.config.read_dict(env_config)
         logging.info("Configuration loaded from environment variables")
 
@@ -354,7 +358,7 @@ def init_chat_model(config: ConfigParser) -> ChatOpenAI:
         model=config.get("settings", "chat_model"),
         temperature=float(config.get("settings", "temperature")),
         openai_api_key=config.get("api", "openai_api_key"),
-        openai_organization=config.get("api", "openai_organization"),
+        openai_organization=config.get("api", "openai_organization", fallback=None),
         max_tokens=4095,
     )  # type: ignore
     return chat
