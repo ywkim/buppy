@@ -444,9 +444,7 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
                 logger.info(
                     "Analyzing sentiment of the user message for emoji reaction"
                 )
-                emoji_reactions = await analyze_sentiment(
-                    message_text, app_config
-                )
+                emoji_reactions = await analyze_sentiment(message_text, app_config)
                 emoji_reactions = [
                     emoji for emoji in emoji_reactions if emoji not in EXCLUDED_EMOJIS
                 ]
@@ -475,9 +473,7 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
                     )
                 )
 
-                response_message = await ask_question(
-                    formatted_messages, app_config
-                )
+                response_message = await ask_question(formatted_messages, app_config)
                 logger.info(
                     create_log_message(
                         "Received response from OpenAI API",
