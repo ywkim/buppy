@@ -352,14 +352,20 @@ def encode_image_to_base64(image_data: bytes) -> str | None:
     return None
 
 
-def init_chat_model(config: ConfigParser) -> ChatOpenAI:
+def init_chat_model(app_config: AppConfig) -> ChatOpenAI:
     """Initialize the langchain chat model."""
+    if app_config.vision_enabled:
+        max_tokens = 4095
+    else:
+        max_tokens = 1023
+
+    config = app_config.config
     chat = ChatOpenAI(
         model=config.get("settings", "chat_model"),
         temperature=float(config.get("settings", "temperature")),
         openai_api_key=config.get("api", "openai_api_key"),
         openai_organization=config.get("api", "openai_organization", fallback=None),
-        max_tokens=4095,
+        max_tokens=max_tokens,
     )  # type: ignore
     return chat
 
@@ -439,7 +445,7 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
                     "Analyzing sentiment of the user message for emoji reaction"
                 )
                 emoji_reactions = await analyze_sentiment(
-                    message_text, app_config.config
+                    message_text, app_config
                 )
                 emoji_reactions = [
                     emoji for emoji in emoji_reactions if emoji not in EXCLUDED_EMOJIS
@@ -470,7 +476,7 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
                 )
 
                 response_message = await ask_question(
-                    formatted_messages, app_config.config
+                    formatted_messages, app_config
                 )
                 logger.info(
                     create_log_message(
@@ -499,9 +505,9 @@ def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
         logger.info(f"Remove reaction to the message: {response}")
 
 
-async def analyze_sentiment(message: str, config: ConfigParser) -> list[str]:
+async def analyze_sentiment(message: str, app_config: AppConfig) -> list[str]:
     system_prompt = SystemMessage(content=EMOJI_SYSTEM_PROMPT)
-    chat = init_chat_model(config)
+    chat = init_chat_model(app_config)
     formatted_message = HumanMessage(content=message)
     resp = await chat.agenerate([[system_prompt, formatted_message]])
     response_message = resp.generations[0][0].text
@@ -667,18 +673,19 @@ def format_prefix_messages_content(prefix_messages_json: str) -> list[BaseMessag
 
 
 async def ask_question(
-    formatted_messages: list[BaseMessage], config: ConfigParser
+    formatted_messages: list[BaseMessage], app_config: AppConfig
 ) -> str:
     """
     Pass the formatted_messages to the Chat API and return the response content.
 
     Args:
         formatted_messages (list[BaseMessage]): list of formatted messages.
-        config (ConfigParser): Configuration parameters for the application.
+        app_config (AppConfig): Configuration parameters for the application.
 
     Returns:
         str: Content of the response from the Chat API.
     """
+    config = app_config.config
     system_prompt = SystemMessage(content=config.get("settings", "system_prompt"))
 
     # Check if 'message_file' setting presents. If it does, load prefix messages from file.
@@ -700,7 +707,7 @@ async def ask_question(
     # Appending prefix messages before the main conversation
     formatted_messages = prefix_messages + formatted_messages
 
-    chat = init_chat_model(config)
+    chat = init_chat_model(app_config)
     resp = await chat.agenerate([[system_prompt, *formatted_messages]])
     return resp.generations[0][0].text
 
