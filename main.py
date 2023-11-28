@@ -37,6 +37,8 @@ DEFAULT_CONFIG = {
 
 EMOJI_SYSTEM_PROMPT = "사용자의 슬랙 메시지에 대한 반응을 슬랙 Emoji로 표시하세요. 표현하기 어렵다면 :?:를 사용해 주세요."
 
+MAX_TOKENS = 1023
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -354,18 +356,13 @@ def encode_image_to_base64(image_data: bytes) -> str | None:
 
 def init_chat_model(app_config: AppConfig) -> ChatOpenAI:
     """Initialize the langchain chat model."""
-    if app_config.vision_enabled:
-        max_tokens = 4095
-    else:
-        max_tokens = 1023
-
     config = app_config.config
     chat = ChatOpenAI(
         model=config.get("settings", "chat_model"),
         temperature=float(config.get("settings", "temperature")),
         openai_api_key=config.get("api", "openai_api_key"),
         openai_organization=config.get("api", "openai_organization", fallback=None),
-        max_tokens=max_tokens,
+        max_tokens=MAX_TOKENS,
     )  # type: ignore
     return chat
 
