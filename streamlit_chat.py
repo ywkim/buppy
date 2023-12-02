@@ -1,20 +1,16 @@
 from __future__ import annotations
 
-import json
 import logging
 from collections.abc import Generator
 from typing import Any
 
 import streamlit as st
 from google.cloud import firestore
-from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain.schema import AIMessage, BaseMessage, HumanMessage
 
 from config.app_config import AppConfig, init_chat_model
 from utils.logging_utils import create_log_message
-from utils.message_utils import (
-    format_prefix_messages_content,
-    load_prefix_messages_from_file,
-)
+from utils.message_utils import prepare_chat_messages
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -178,34 +174,9 @@ def ask_question(
     Yields:
         Generator[str, None, None]: Generator yielding each content chunk from the Chat API responses.
     """
-    config = app_config.config
-    system_prompt = SystemMessage(content=config.get("settings", "system_prompt"))
-
-    # Check if 'message_file' setting presents. If it does, load prefix messages from file.
-    # If not, check if 'prefix_messages_content' is not None, then parse it to create the list of prefix messages
-    message_file_path = config.get("settings", "message_file", fallback=None)
-    prefix_messages_content = config.get(
-        "settings", "prefix_messages_content", fallback=None
-    )
-
-    prefix_messages: list[BaseMessage] = []
-
-    if message_file_path:
-        prefix_messages = load_prefix_messages_from_file(message_file_path)
-        logging.info(
-            "Loading %d prefix messages from file %s",
-            len(prefix_messages),
-            message_file_path,
-        )
-    elif prefix_messages_content:
-        prefix_messages = format_prefix_messages_content(prefix_messages_content)
-        logging.info("Parsing %d prefix messages from settings", len(prefix_messages))
-
-    # Appending prefix messages before the main conversation
-    formatted_messages = prefix_messages + formatted_messages
-
     chat = init_chat_model(app_config)
-    for chunk in chat.stream([system_prompt, *formatted_messages]):
+    prepared_messages = prepare_chat_messages(formatted_messages, app_config)
+    for chunk in chat.stream(prepared_messages):
         yield str(chunk.content)
 
 

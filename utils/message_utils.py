@@ -5,6 +5,8 @@ import json
 
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
+from config.app_config import AppConfig
+
 
 class InvalidRoleError(Exception):
     """Exception raised when an invalid role is encountered in message processing."""
@@ -76,3 +78,38 @@ def format_prefix_messages_content(prefix_messages_json: str) -> list[BaseMessag
             )
 
     return formatted_messages
+
+
+def prepare_chat_messages(
+    formatted_messages: list[BaseMessage], app_config: AppConfig
+) -> list[BaseMessage]:
+    """
+    Prepares chat messages by appending prefix messages to the conversation.
+
+    Args:
+        formatted_messages (list[BaseMessage]): The list of conversation messages.
+        app_config (AppConfig): The application configuration.
+
+    Returns:
+        list[BaseMessage]: The prepared list of messages including prefix messages.
+    """
+    config = app_config.config
+    system_prompt = SystemMessage(content=config.get("settings", "system_prompt"))
+
+    # Check if 'message_file' setting presents. If it does, load prefix messages from file.
+    # If not, check if 'prefix_messages_content' is not None, then parse it to create the list of prefix messages
+
+    message_file_path = config.get("settings", "message_file", fallback=None)
+    prefix_messages_content = config.get(
+        "settings", "prefix_messages_content", fallback=None
+    )
+
+    prefix_messages: list[BaseMessage] = []
+
+    if message_file_path:
+        prefix_messages = load_prefix_messages_from_file(message_file_path)
+    elif prefix_messages_content:
+        prefix_messages = format_prefix_messages_content(prefix_messages_content)
+
+    # Appending prefix messages before the main conversation
+    return [system_prompt, *prefix_messages, *formatted_messages]

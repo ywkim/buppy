@@ -21,10 +21,7 @@ from slack_sdk.web.async_client import AsyncWebClient
 
 from config.app_config import AppConfig, init_chat_model
 from utils.logging_utils import create_log_message
-from utils.message_utils import (
-    format_prefix_messages_content,
-    load_prefix_messages_from_file,
-)
+from utils.message_utils import prepare_chat_messages
 
 ERROR_EMOJI = "bangbang"
 EXCLUDED_EMOJIS = ["eyes", ERROR_EMOJI]
@@ -469,30 +466,9 @@ async def ask_question(
     Returns:
         str: Content of the response from the Chat API.
     """
-    config = app_config.config
-    system_prompt = SystemMessage(content=config.get("settings", "system_prompt"))
-
-    # Check if 'message_file' setting presents. If it does, load prefix messages from file.
-    # If not, check if 'prefix_messages_content' is not None, then parse it to create the list of prefix messages
-    message_file_path = config.get("settings", "message_file", fallback=None)
-    prefix_messages_content = config.get(
-        "settings", "prefix_messages_content", fallback=None
-    )
-
-    prefix_messages: list[BaseMessage] = []
-
-    if message_file_path:
-        logging.info("Loading prefix messages from file %s", message_file_path)
-        prefix_messages = load_prefix_messages_from_file(message_file_path)
-    elif prefix_messages_content:
-        logging.info("Parsing prefix messages from settings")
-        prefix_messages = format_prefix_messages_content(prefix_messages_content)
-
-    # Appending prefix messages before the main conversation
-    formatted_messages = prefix_messages + formatted_messages
-
     chat = init_chat_model(app_config)
-    resp = await chat.agenerate([[system_prompt, *formatted_messages]])
+    prepared_messages = prepare_chat_messages(formatted_messages, app_config)
+    resp = await chat.agenerate([prepared_messages])
     return resp.generations[0][0].text
 
 
