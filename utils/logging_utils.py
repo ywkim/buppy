@@ -1,5 +1,7 @@
-from langchain.schema import BaseMessage
 import json
+
+from langchain.schema import BaseMessage
+
 
 def custom_serializer(obj: object) -> str:
     """

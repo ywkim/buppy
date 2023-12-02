@@ -13,17 +13,15 @@ import aiohttp
 import emoji_data_python
 from aiohttp import ClientError
 from google.cloud import firestore
-from langchain.chat_models import ChatOpenAI
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
 from slack_bolt.context.say.async_say import AsyncSay
 from slack_sdk.web.async_client import AsyncWebClient
 
-from config.app_config import AppConfig, safely_get_field
+from config.app_config import AppConfig, init_chat_model
 from utils.logging_utils import create_log_message
 from utils.message_utils import (
-    InvalidRoleError,
     format_prefix_messages_content,
     load_prefix_messages_from_file,
 )
@@ -32,8 +30,6 @@ ERROR_EMOJI = "bangbang"
 EXCLUDED_EMOJIS = ["eyes", ERROR_EMOJI]
 
 EMOJI_SYSTEM_PROMPT = "사용자의 슬랙 메시지에 대한 반응을 슬랙 Emoji로 표시하세요. 표현하기 어렵다면 :?:를 사용해 주세요."
-
-MAX_TOKENS = 1023
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -137,45 +133,7 @@ class SlackAppConfig(AppConfig):
                 f"Companion with ID {companion_id} does not exist in Firebase."
             )
 
-        # Retrieve settings and use defaults if necessary
-        settings = {
-            "chat_model": (
-                safely_get_field(
-                    companion,
-                    "chat_model",
-                    self.DEFAULT_CONFIG["settings"]["chat_model"],
-                )
-            ),
-            "system_prompt": (
-                safely_get_field(
-                    companion,
-                    "system_prompt",
-                    self.DEFAULT_CONFIG["settings"]["system_prompt"],
-                )
-            ),
-            "temperature": (
-                safely_get_field(
-                    companion,
-                    "temperature",
-                    self.DEFAULT_CONFIG["settings"]["temperature"],
-                )
-            ),
-            "vision_enabled": (
-                safely_get_field(
-                    companion,
-                    "vision_enabled",
-                    self.DEFAULT_CONFIG["settings"]["vision_enabled"],
-                )
-            ),
-        }
-
-        # Add 'prefix_messages_content' only if it exists
-        prefix_messages_content = safely_get_field(companion, "prefix_messages_content")
-        if prefix_messages_content is not None:
-            settings["prefix_messages_content"] = json.dumps(prefix_messages_content)
-
-        # Apply the new configuration settings
-        self.config.read_dict({"settings": settings})
+        self._apply_settings_from_companion(companion)
 
         logging.info(
             "Configuration loaded from Firebase Firestore for bot %s", bot_user_id
@@ -263,19 +221,6 @@ def encode_image_to_base64(image_data: bytes) -> str | None:
     if image_data is not None:
         return base64.b64encode(image_data).decode("utf-8")
     return None
-
-
-def init_chat_model(app_config: AppConfig) -> ChatOpenAI:
-    """Initialize the langchain chat model."""
-    config = app_config.config
-    chat = ChatOpenAI(
-        model=config.get("settings", "chat_model"),
-        temperature=float(config.get("settings", "temperature")),
-        openai_api_key=config.get("api", "openai_api_key"),
-        openai_organization=config.get("api", "openai_organization", fallback=None),
-        max_tokens=MAX_TOKENS,
-    )  # type: ignore
-    return chat
 
 
 def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:

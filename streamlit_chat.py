@@ -7,18 +7,14 @@ from typing import Any
 
 import streamlit as st
 from google.cloud import firestore
-from langchain.chat_models import ChatOpenAI
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
-from config.app_config import AppConfig, safely_get_field
+from config.app_config import AppConfig, init_chat_model
 from utils.logging_utils import create_log_message
 from utils.message_utils import (
-    InvalidRoleError,
     format_prefix_messages_content,
     load_prefix_messages_from_file,
 )
-
-MAX_TOKENS = 1023
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -50,69 +46,12 @@ class StreamlitAppConfig(AppConfig):
                 f"Companion with ID {companion_id} does not exist in Firebase."
             )
 
-        # Retrieve settings and use defaults if necessary
-        settings = {
-            "chat_model": (
-                safely_get_field(
-                    companion,
-                    "chat_model",
-                    self.DEFAULT_CONFIG["settings"]["chat_model"],
-                )
-            ),
-            "system_prompt": (
-                safely_get_field(
-                    companion,
-                    "system_prompt",
-                    self.DEFAULT_CONFIG["settings"]["system_prompt"],
-                )
-            ),
-            "temperature": (
-                safely_get_field(
-                    companion,
-                    "temperature",
-                    self.DEFAULT_CONFIG["settings"]["temperature"],
-                )
-            ),
-        }
-
-        # Add 'prefix_messages_content' only if it exists
-        prefix_messages_content = safely_get_field(companion, "prefix_messages_content")
-        if prefix_messages_content is not None:
-            settings["prefix_messages_content"] = json.dumps(prefix_messages_content)
-
-        # Apply the new configuration settings
-        self.config.read_dict({"settings": settings})
-
-        logging.info(
-            "Configuration loaded from Firebase Firestore for companion %s",
-            companion_id,
-        )
+        self._apply_settings_from_companion(companion)
 
     def load_config(self) -> None:
         """Load configuration from Streamlit secrets."""
         self._load_config_from_streamlit_secrets()
         self._validate_config()
-
-
-def init_chat_model(app_config: AppConfig) -> ChatOpenAI:
-    """
-    Initialize the langchain chat model.
-
-    Args:
-        app_config (AppConfig): Application configuration object.
-
-    Returns:
-        ChatOpenAI: Initialized chat model.
-    """
-    config = app_config.config
-    chat = ChatOpenAI(
-        model=config.get("settings", "chat_model"),
-        temperature=float(config.get("settings", "temperature")),
-        openai_api_key=config.get("api", "openai_api_key"),
-        openai_organization=config.get("api", "openai_organization", fallback=None),
-        max_tokens=MAX_TOKENS,
-    )  # type: ignore
-    return chat
 
 
 def display_messages(messages: list[dict[str, Any]]) -> None:
