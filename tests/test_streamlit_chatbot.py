@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-from config.app_config import AppConfig
 from streamlit_chat import format_messages
 from utils.message_utils import InvalidRoleError, load_prefix_messages_from_file
 

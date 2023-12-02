@@ -92,7 +92,6 @@ class AppConfig(ABC):
         readable_config = (
             f"Chat Model: {self.config.get('settings', 'chat_model')}\n"
             f"System Prompt: {self.config.get('settings', 'system_prompt')}\n"
-            f"Temperature: {self.config.get('settings', 'temperature')}\n"
-            f"Vision Enabled: {'Yes' if self.vision_enabled else 'No'}"
+            f"Temperature: {self.config.get('settings', 'temperature')}"
         )
         return readable_config
