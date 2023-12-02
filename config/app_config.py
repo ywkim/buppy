@@ -65,6 +65,11 @@ class AppConfig(ABC):
         self.config: ConfigParser = ConfigParser()
         self.config.read_dict(self.DEFAULT_CONFIG)
 
+    @property
+    def vision_enabled(self) -> bool:
+        """Determines if vision (image analysis) feature is enabled."""
+        return self.config.getboolean("settings", "vision_enabled", fallback=False)
+
     def _validate_config(self) -> None:
         """Validate that required configuration variables are present."""
         required_settings = ["openai_api_key"]
@@ -145,7 +150,8 @@ class AppConfig(ABC):
         readable_config = (
             f"Chat Model: {self.config.get('settings', 'chat_model')}\n"
             f"System Prompt: {self.config.get('settings', 'system_prompt')}\n"
-            f"Temperature: {self.config.get('settings', 'temperature')}"
+            f"Temperature: {self.config.get('settings', 'temperature')}\n"
+            f"Vision Enabled: {'Yes' if self.vision_enabled else 'No'}"
         )
         return readable_config
 

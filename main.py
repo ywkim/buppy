@@ -44,11 +44,6 @@ class SlackAppConfig(AppConfig):
         config (ConfigParser): A ConfigParser object holding the configuration.
     """
 
-    @property
-    def vision_enabled(self) -> bool:
-        """Determines if vision (image analysis) feature is enabled."""
-        return self.config.getboolean("settings", "vision_enabled", fallback=False)
-
     def load_config_from_file(self, config_file: str) -> None:
         """Load configuration from a given file path."""
         self.config.read(config_file)
@@ -150,17 +145,6 @@ class SlackAppConfig(AppConfig):
             self.load_config_from_env_vars()
 
         self._validate_config()
-
-    def get_readable_config(self) -> str:
-        """
-        Retrieves a human-readable string of the current non-sensitive configuration.
-
-        Returns:
-            str: A string representing the current configuration excluding sensitive details.
-        """
-        readable_config = super().get_readable_config()
-        readable_config += f"\nVision Enabled: {'Yes' if self.vision_enabled else 'No'}"
-        return readable_config
 
 
 def extract_image_url(message: dict[str, Any]) -> str | None:
