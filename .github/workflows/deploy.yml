@@ -65,6 +65,7 @@ jobs:
           --wait \
           --namespace a05ujv11zum \
           --create-namespace \
+          --timeout 20m0s \
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
           --set openaiOrganization=$OPENAI_ORGANIZATION \
@@ -80,6 +81,7 @@ jobs:
           --wait \
           --namespace u060ynqlwaj \
           --create-namespace \
+          --timeout 20m0s \
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
           --set openaiOrganization=$OPENAI_ORGANIZATION \
