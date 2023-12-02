@@ -20,6 +20,7 @@ from slack_bolt.context.say.async_say import AsyncSay
 from slack_sdk.web.async_client import AsyncWebClient
 
 from config.app_config import AppConfig
+from utils.message_utils import InvalidRoleError, load_prefix_messages_from_file
 
 ERROR_EMOJI = "bangbang"
 EXCLUDED_EMOJIS = ["eyes", ERROR_EMOJI]
@@ -31,10 +32,6 @@ MAX_TOKENS = 1023
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-
-
-class InvalidRoleError(Exception):
-    """Raised when the role isn't AI or Human"""
 
 
 def custom_serializer(obj: Any) -> str:
@@ -390,37 +387,6 @@ async def format_messages(
             formatted_messages.append(AIMessage(content=text_content))
 
     return formatted_messages
-
-
-def load_prefix_messages_from_file(file_path: str) -> list[BaseMessage]:
-    """
-    Load prefix messages from a CSV file and return a list of message objects.
-
-    Args:
-    file_path (str): Path of the CSV file containing prefix messages.
-
-    Returns:
-    list[BaseMessage]: A list of message objects created from the file.
-
-    Raises:
-    InvalidRoleError: If the role in the CSV file isn't 'AI' or 'Human'.
-    """
-    messages: list[BaseMessage] = []
-
-    with open(file_path, "r", encoding="utf-8") as file:
-        reader = csv.reader(file)
-        for row in reader:
-            role, content = row
-            if role == "Human":
-                messages.append(HumanMessage(content=content))
-            elif role == "AI":
-                messages.append(AIMessage(content=content))
-            else:
-                raise InvalidRoleError(
-                    f"Invalid role {role} in CSV file. Role must be either 'AI' or 'Human'."
-                )
-
-    return messages
 
 
 def format_prefix_messages_content(prefix_messages_json: str) -> list[BaseMessage]:
