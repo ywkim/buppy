@@ -12,7 +12,11 @@ from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from config.app_config import AppConfig, safely_get_field
 from utils.logging_utils import create_log_message
-from utils.message_utils import InvalidRoleError, load_prefix_messages_from_file
+from utils.message_utils import (
+    InvalidRoleError,
+    format_prefix_messages_content,
+    load_prefix_messages_from_file,
+)
 
 MAX_TOKENS = 1023
 
@@ -216,40 +220,6 @@ def format_messages(thread_messages: list[dict[str, Any]]) -> list[BaseMessage]:
             formatted_messages.append(HumanMessage(content=msg["content"]))
         else:
             formatted_messages.append(AIMessage(content=msg["content"]))
-
-    return formatted_messages
-
-
-def format_prefix_messages_content(prefix_messages_json: str) -> list[BaseMessage]:
-    """
-    Format prefix messages content from json string to BaseMessage objects
-
-    Args:
-        prefix_messages_json (str): JSON string with prefix messages content
-
-    Returns:
-        list[BaseMessage]: list of BaseMessage instances
-
-    Raises:
-        InvalidRoleError: If the role in the content isn't 'assistant', 'user', or 'system'.
-    """
-    prefix_messages = json.loads(prefix_messages_json)
-    formatted_messages: list[BaseMessage] = []
-
-    for msg in prefix_messages:
-        role = msg["role"]
-        content = msg["content"]
-
-        if role.lower() == "user":
-            formatted_messages.append(HumanMessage(content=content))
-        elif role.lower() == "system":
-            formatted_messages.append(SystemMessage(content=content))
-        elif role.lower() == "assistant":
-            formatted_messages.append(AIMessage(content=content))
-        else:
-            raise InvalidRoleError(
-                f"Invalid role {role} in prefix content message. Role must be 'assistant', 'user', or 'system'."
-            )
 
     return formatted_messages
 

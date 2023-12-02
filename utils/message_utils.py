@@ -41,3 +41,37 @@ def load_prefix_messages_from_file(file_path: str) -> list[BaseMessage]:
                 )
 
     return messages
+
+
+def format_prefix_messages_content(prefix_messages_json: str) -> list[BaseMessage]:
+    """
+    Format prefix messages content from json string to BaseMessage objects
+
+    Args:
+        prefix_messages_json (str): JSON string with prefix messages content
+
+    Returns:
+        list[BaseMessage]: list of BaseMessage instances
+
+    Raises:
+        InvalidRoleError: If the role in the content isn't 'assistant', 'user', or 'system'.
+    """
+    prefix_messages = json.loads(prefix_messages_json)
+    formatted_messages: list[BaseMessage] = []
+
+    for msg in prefix_messages:
+        role = msg["role"]
+        content = msg["content"]
+
+        if role.lower() == "user":
+            formatted_messages.append(HumanMessage(content=content))
+        elif role.lower() == "system":
+            formatted_messages.append(SystemMessage(content=content))
+        elif role.lower() == "assistant":
+            formatted_messages.append(AIMessage(content=content))
+        else:
+            raise InvalidRoleError(
+                f"Invalid role {role} in prefix content message. Role must be 'assistant', 'user', or 'system'."
+            )
+
+    return formatted_messages
