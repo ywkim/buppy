@@ -70,7 +70,6 @@ Streamlit 웹 인터페이스를 위해, `.streamlit/secrets.toml` 파일에 필
 ```toml
 [api]
 openai_api_key = "your_openai_api_key_here"
-openai_organization = "your_openai_organization_id_here"
 
 [settings]
 temperature = 1
