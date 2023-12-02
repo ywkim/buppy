@@ -3,7 +3,7 @@ import os
 import unittest
 from unittest.mock import patch
 
-from main import AppConfig
+from config.app_config import AppConfig
 
 
 class TestConfig(unittest.TestCase):
