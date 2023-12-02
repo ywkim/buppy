@@ -105,10 +105,8 @@ def handle_chat_interaction(app_config: StreamlitAppConfig) -> None:
                 "firebase", "enabled", fallback=False
             )
             if firebase_enabled:
-                companion_id = st.secrets["COMPANION_ID"]
-                if companion_id is None:
-                    raise ValueError("COMPANION_ID is not defined in st.secrets")
-                app_config.load_config_from_firebase(str(companion_id))
+                companion_id = st.session_state.companion_id
+                app_config.load_config_from_firebase(companion_id)
                 logging.info("Override configuration with Firebase settings")
 
             # Format messages for chat model processing
@@ -180,6 +178,18 @@ def ask_question(
         yield str(chunk.content)
 
 
+def display_companion_id_input() -> str | None:
+    """
+    Displays an input field in the Streamlit sidebar for the user to enter or change the companion_id.
+
+    Returns:
+        Optional[str]: The entered Companion ID, or None if not entered.
+    """
+    st.sidebar.title("Companion ID Settings")
+    companion_id = st.sidebar.text_input("Enter Companion ID", key="companion_id_input")
+    return companion_id
+
+
 def main():
     """Main function to run the Streamlit chatbot app."""
     logging.info("Starting Streamlit chatbot app")
@@ -191,10 +201,17 @@ def main():
         "firebase", "enabled", fallback=False
     )
     if firebase_enabled:
-        companion_id = st.secrets.get("COMPANION_ID")
-        if companion_id is None:
-            raise ValueError("COMPANION_ID is not defined in st.secrets")
-        app_config.load_config_from_firebase(str(companion_id))
+        companion_id = display_companion_id_input()
+        if not companion_id:
+            st.markdown("👈 상단 왼쪽 모서리에 있는 사이드바를 열어 Companion ID를 입력해 주세요.")
+            return
+        if (
+            "companion_id" not in st.session_state
+            or st.session_state.companion_id != companion_id
+        ):
+            st.session_state.companion_id = companion_id
+            st.session_state.thread_messages = []
+        app_config.load_config_from_firebase(companion_id)
         logging.info("Override configuration with Firebase settings")
 
     # Display chat interface
