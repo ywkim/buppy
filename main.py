@@ -402,7 +402,7 @@ def is_valid_emoji_code(input_code: str) -> bool:
 
 
 async def format_messages(
-    thread_messages: list[dict[str, Any]], bot_user_id: str, app_config: AppConfig
+    thread_messages: list[dict[str, Any]], bot_user_id: str, app_config: SlackAppConfig
 ) -> list[BaseMessage]:
     """
     Formats messages from a Slack thread into a list of HumanMessage objects,
