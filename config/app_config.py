@@ -84,7 +84,6 @@ class AppConfig(ABC):
         Applies settings from the given companion Firestore document to the provided app configuration.
 
         Args:
-            app_config (AppConfig): The application configuration object.
             companion (firestore.DocumentSnapshot): Firestore document snapshot containing companion settings.
         """
         # Retrieve settings and use defaults if necessary
