@@ -19,7 +19,6 @@ Buppy는 대화형 웹 애플리케이션과 슬랙에서 동작하는 AI 동반
 - Slack Workspace
 - Slack App 생성
 - OpenAI API Key
-- Streamlit 설치
 
 ### 패키지 관리 도구 Poetry 설치
 
@@ -63,6 +62,20 @@ vision_enabled = false
 `vision_enabled` 설정은 이미지 분석 기능을 활성화하며, 이 기능은 `gpt-4-vision-preview` 모델에서만 사용 가능합니다. 해당 모델을 설정하여 Buppy가 Slack 메시지에 포함된 이미지에 대한 분석을 수행할 수 있도록 합니다.
 
 OpenAI의 API Key는 [OpenAI 플랫폼](https://platform.openai.com/account/api-keys)에서 생성할 수 있습니다. 생성한 Key를 위의 설정 예제에 있는 `OPENAI_API_KEY` 위치에 붙여넣으세요.
+
+### Streamlit 설정
+
+Streamlit 웹 인터페이스를 위해, `.streamlit/secrets.toml` 파일에 필요한 설정을 추가합니다. 이 파일은 Streamlit 앱의 설정 정보를 저장하는 데 사용됩니다. 다음은 설정 예제입니다:
+
+```toml
+[api]
+openai_api_key = "your_openai_api_key_here"
+openai_organization = "your_openai_organization_id_here"
+
+[settings]
+temperature = 1
+system_prompt = "You are a helpful assistant."
+```
 
 ## 실행 방법 🖥️
 
