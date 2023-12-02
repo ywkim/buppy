@@ -1940,7 +1940,7 @@ files = [
 [package.dependencies]
 numpy = [
     {version = ">=1.21.0", markers = "python_version <= \"3.9\" and platform_system == \"Darwin\" and platform_machine == \"arm64\""},
-    {version = ">=1.19.3", markers = "python_version >= \"3.6\" and platform_system == \"Linux\" and platform_machine == \"aarch64\""},
+    {version = ">=1.19.3", markers = "python_version >= \"3.6\" and platform_system == \"Linux\" and platform_machine == \"aarch64\" or python_version >= \"3.9\""},
     {version = ">=1.17.0", markers = "python_version >= \"3.7\""},
     {version = ">=1.17.3", markers = "python_version >= \"3.8\""},
 ]
@@ -4033,5 +4033,5 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.8.6,<3.9"
-content-hash = "c0433c40f5f0c2ac2da3d7ada5ab5d81e189f1dbd2f185b29377c2c3931ddda9"
+python-versions = ">=3.8.6,<3.9.7"
+content-hash = "85094e8843fbb00328b40b8dbb990df4743ea64263fd9b4380c7e37673e183bc"
