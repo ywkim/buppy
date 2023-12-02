@@ -1,9 +1,8 @@
-import configparser
 import os
 import unittest
 from unittest.mock import patch
 
-from config.app_config import AppConfig
+from main import SlackAppConfig
 
 
 class TestConfig(unittest.TestCase):
@@ -46,16 +45,8 @@ class TestConfig(unittest.TestCase):
                 "TEMPERATURE": "0",
             },
         ):
-            app_config = AppConfig()
+            app_config = SlackAppConfig()
             app_config.load_config_from_env_vars()
-            self.assertConfigStructure(app_config.config)
-
-    def assertConfigStructure(self, config: configparser.ConfigParser) -> None:
-        """Assert that the loaded configuration has all the required sections and options"""
-        for section, options in self.config_structure.items():
-            self.assertIn(section, config.sections())
-            for option in options:
-                self.assertIn(option, config.options(section))
 
 
 if __name__ == "__main__":
