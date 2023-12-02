@@ -1,7 +1,7 @@
 import unittest
-from unittest.mock import Mock, patch
 
 from upload_companion import document_exists, upload_bot_data, upload_companion_data
+
 
 class TestUploadCompanion(unittest.TestCase):
     """
@@ -67,7 +67,9 @@ class TestUploadCompanion(unittest.TestCase):
 
         # Simulate a non-existing document
         self.mock_db.collection().document().get().exists = False
-        self.assertFalse(document_exists(self.mock_db, "Companions", "non_existing_doc"))
+        self.assertFalse(
+            document_exists(self.mock_db, "Companions", "non_existing_doc")
+        )
 
 
 if __name__ == "__main__":
