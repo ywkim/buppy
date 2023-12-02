@@ -1,6 +1,6 @@
 # Buppy 🐶
 
-Buppy는 슬랙에서 동작하는 AI 동반자입니다! Buppy는 사용자의 질문에 대한 답변을 생성하고 반환합니다. 실시간 상호작용으로 질문을 이해하고 대응합니다.
+Buppy는 대화형 웹 애플리케이션과 슬랙에서 동작하는 AI 동반자입니다! 사용자가 슬랙과 웹 인터페이스를 통해 Buppy와 상호작용할 수 있습니다. Buppy는 사용자의 질문에 대한 답변을 생성하고 반환하며, 실시간 상호작용으로 질문을 이해하고 대응합니다.
 
 ## 목차
 - [설치 가이드](#설치-가이드)
@@ -19,6 +19,7 @@ Buppy는 슬랙에서 동작하는 AI 동반자입니다! Buppy는 사용자의 
 - Slack Workspace
 - Slack App 생성
 - OpenAI API Key
+- Streamlit 설치
 
 ### 패키지 관리 도구 Poetry 설치
 
@@ -61,7 +62,7 @@ vision_enabled = false
 
 `vision_enabled` 설정은 이미지 분석 기능을 활성화하며, 이 기능은 `gpt-4-vision-preview` 모델에서만 사용 가능합니다. 해당 모델을 설정하여 Buppy가 Slack 메시지에 포함된 이미지에 대한 분석을 수행할 수 있도록 합니다.
 
-OpenAI의 API Key는 [OpenAI 플랫폼](https://platform.openai.com/account/api-keys)에서 생성할 수 있습니다. 생성한 Key를 위의 설정 예제에 있는 `OPEN_AI_API_KEY_VALUE` 위치에 붙여넣으세요.
+OpenAI의 API Key는 [OpenAI 플랫폼](https://platform.openai.com/account/api-keys)에서 생성할 수 있습니다. 생성한 Key를 위의 설정 예제에 있는 `OPENAI_API_KEY` 위치에 붙여넣으세요.
 
 ## 실행 방법 🖥️
 
@@ -69,10 +70,16 @@ OpenAI의 API Key는 [OpenAI 플랫폼](https://platform.openai.com/account/api-
 
 Poetry를 사용하여 아래 명령어로 코드를 실행할 수 있습니다:
 
-#### Buppy 실행
+#### Buppy 실행 (Slack)
 
 ```
 poetry run python main.py
+```
+
+#### Buppy 실행 (Web Interface)
+
+```
+poetry run streamlit run streamlit_chat.py
 ```
 
 #### `upload_companion.py` 스크립트 실행
@@ -126,7 +133,13 @@ https://api.slack.com/apps
 
 이제 Buppy는 설정된 Slack 채널에서 잘 동작할 것입니다. 앱을 언급하거나 직접 질문하면 Buppy가 대답을 생성하여 반환합니다.
 
+### Streamlit 웹 인터페이스 설정
+
+웹 인터페이스를 통해 Buppy와 상호작용하기 위해서는 별도의 추가 설정이 필요하지 않습니다. 위의 실행 방법 섹션에서 제공된 명령어를 사용하여 로컬에서 Streamlit 애플리케이션을 실행할 수 있습니다.
+
 ## 사용법 📘
+
+### Slack에서 사용하기
 
 Buppy에게 질문하려면, 슬랙에서 `@Buppy` 를 멘션하여 질문을 하면 됩니다.
 
@@ -135,6 +148,10 @@ Buppy에게 질문하려면, 슬랙에서 `@Buppy` 를 멘션하여 질문을 �
 ```
 
 Buppy는 질문을 처리하고, 결과를 생성하여 반환합니다.
+
+### 웹 인터페이스에서 사용하기
+
+웹 인터페이스에서 Buppy와 상호작용하기 위해, Streamlit 애플리케이션을 실행하고 웹 브라우저에서 해당 URL로 접속하세요. 사용자는 대화 입력 필드에 메시지를 입력하여 Buppy와 대화를 시작할 수 있습니다. Buppy는 실시간으로 사용자의 질문에 답변하고 상호작용합니다.
 
 ## 문의 💬
 
