@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import base64
-import csv
 import json
 import logging
 import re
