@@ -220,7 +220,7 @@ def encode_image_to_base64(image_data: bytes) -> str | None:
     return None
 
 
-def register_events_and_commands(app: AsyncApp, app_config: AppConfig) -> None:
+def register_events_and_commands(app: AsyncApp, app_config: SlackAppConfig) -> None:
     """
     Registers event handlers with the Slack application.
 

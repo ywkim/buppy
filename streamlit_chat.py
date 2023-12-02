@@ -65,7 +65,7 @@ def display_messages(messages: list[dict[str, Any]]) -> None:
             st.markdown(message["content"])
 
 
-def handle_chat_interaction(app_config: AppConfig) -> None:
+def handle_chat_interaction(app_config: StreamlitAppConfig) -> None:
     """
     Displays the chat interface and handles user interactions in Streamlit.
 
