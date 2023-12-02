@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import Mock
 
 from upload_companion import document_exists, upload_bot_data, upload_companion_data
 
