@@ -23,7 +23,13 @@ class StreamlitAppConfig(AppConfig):
 
     def _load_config_from_streamlit_secrets(self):
         """Loads configuration from Streamlit secrets."""
-        self.config.read_dict(st.secrets)
+        self.config.read_dict(
+            {
+                key: value
+                for key, value in st.secrets.items()
+                if key != "firebase_service_account"
+            }
+        )
 
     def _initialize_firebase_client(self) -> firestore.Client:
         """
@@ -37,17 +43,20 @@ class StreamlitAppConfig(AppConfig):
         """
         service_account_info = st.secrets.get("firebase_service_account")
         if not service_account_info:
-            raise ValueError(
-                "Firebase service account details not found in Streamlit secrets."
+            logging.info(
+                "Firebase service account details not found in Streamlit secrets. Using default credentials."
             )
+            return firestore.Client()
 
         # Create a service account credential object
         credentials = service_account.Credentials.from_service_account_info(
             service_account_info
         )
 
+        project_id = service_account_info["project_id"]
+
         # Initialize and return the Firestore client with the credentials
-        return firestore.Client(credentials=credentials)
+        return firestore.Client(credentials=credentials, project=project_id)
 
     def load_config_from_firebase(self, companion_id: str) -> None:
         """
@@ -105,7 +114,10 @@ def handle_chat_interaction(app_config: StreamlitAppConfig) -> None:
     if "thread_messages" not in st.session_state:
         st.session_state.thread_messages = []
 
-    st.title("Buppy")
+    if "companion_id" in st.session_state:
+        st.title(st.session_state.companion_id)
+    else:
+        st.title("Buppy")
 
     # Display existing chat messages
     display_messages(st.session_state.thread_messages)
