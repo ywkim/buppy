@@ -189,19 +189,17 @@ async def download_image(url: str, token: str) -> bytes:
             return await response.read()
 
 
-def encode_image_to_base64(image_data: bytes) -> str | None:
+def encode_image_to_base64(image_data: bytes) -> str:
     """
-    Encodes image data to a Base64 string.
+    Encodes the given image data to a Base64 string.
 
     Args:
-    image_data (bytes): The raw bytes of the image.
+        image_data (bytes): The raw bytes of the image.
 
     Returns:
-    Optional[str]: The Base64 encoded string of the image, or None if the input is None.
+        str: The Base64 encoded string of the image.
     """
-    if image_data is not None:
-        return base64.b64encode(image_data).decode("utf-8")
-    return None
+    return base64.b64encode(image_data).decode("utf-8")
 
 
 def register_events_and_commands(app: AsyncApp, app_config: SlackAppConfig) -> None:

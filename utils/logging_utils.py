@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import json
+from typing import Any
 
 from langchain.schema import BaseMessage
 
@@ -12,9 +15,29 @@ def custom_serializer(obj: object) -> str:
 
     Returns:
         str: Serialized string representation of the object.
+
+    Raises:
+        TypeError: If the object type cannot be serialized.
     """
     if isinstance(obj, BaseMessage):
-        return f"{obj.__class__.__name__}({obj})"
+        content = obj.content
+        # Check if content is a list and contains base64 image data
+        if isinstance(content, list):
+            serialized_content: list[str | dict[Any, Any]] = []
+            for item in content:
+                if isinstance(item, dict) and item["type"] == "image_url":
+                    # Shorten the base64 image data for logging
+                    img_data = item["image_url"]["url"]
+                    shortened_img_data = (
+                        (img_data[:30] + "...") if len(img_data) > 30 else img_data
+                    )
+                    serialized_content.append(
+                        {"type": "image_url", "image_url": {"url": shortened_img_data}}
+                    )
+                else:
+                    serialized_content.append(item)
+            return f"{obj.__class__.__name__}({serialized_content})"
+        return f"{obj.__class__.__name__}({content})"
     if hasattr(obj, "__str__"):
         return str(obj)
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")

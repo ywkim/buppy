@@ -101,14 +101,14 @@ def display_messages(messages: list[dict[str, Any]]) -> None:
 
 def handle_chat_interaction(app_config: StreamlitAppConfig) -> None:
     """
-    Displays the chat interface and handles user interactions in Streamlit.
+    Manages the chat interaction, including displaying the chat interface and handling user inputs and responses.
 
     This function creates a user interface for the chatbot in a web browser using Streamlit.
     It maintains the session state to keep track of the conversation history and uses the
     chat model to generate responses to user inputs.
 
     Args:
-        app_config (AppConfig): The application configuration object containing settings for the chat model.
+        app_config (StreamlitAppConfig): The configuration object for the app.
     """
     # Initialize session state for conversation history
     if "thread_messages" not in st.session_state:
