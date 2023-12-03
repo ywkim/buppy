@@ -115,15 +115,17 @@ def handle_chat_interaction(app_config: StreamlitAppConfig) -> None:
         st.session_state.thread_messages = []
 
     if "companion_id" in st.session_state:
-        st.title(st.session_state.companion_id)
+        companion_name = st.session_state.companion_id
     else:
-        st.title("Buppy")
+        companion_name = "Buppy"
+
+    st.title(companion_name)
 
     # Display existing chat messages
     display_messages(st.session_state.thread_messages)
 
     # Accept user input and generate responses
-    user_input = st.chat_input("Message Buppy...")
+    user_input = st.chat_input(f"Message {companion_name}...")
     logging.info(
         create_log_message(
             "Received a question from user",
