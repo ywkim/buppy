@@ -91,7 +91,7 @@ poetry run python main.py
 #### Buppy 실행 (Web Interface)
 
 ```
-poetry run streamlit run streamlit_chat.py
+poetry run streamlit run streamlit_app.py
 ```
 
 #### `upload_companion.py` 스크립트 실행
