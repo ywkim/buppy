@@ -3,11 +3,11 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-from streamlit_chat import format_messages
+from streamlit_app import format_messages
 from utils.message_utils import InvalidRoleError, load_prefix_messages_from_file
 
 
-class TestStreamlitChatbot(unittest.TestCase):
+class TestMessageUtils(unittest.TestCase):
     def test_format_messages_valid_input(self) -> None:
         """Test format_messages function with valid input data."""
         input_data = [
