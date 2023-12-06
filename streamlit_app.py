@@ -82,6 +82,7 @@ class StreamlitAppConfig(AppConfig):
         """Load configuration from Streamlit secrets."""
         self._load_config_from_streamlit_secrets()
         self._validate_config()
+        self._apply_langsmith_settings()
 
 
 def display_messages(messages: list[dict[str, Any]]) -> None:

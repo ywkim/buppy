@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from abc import ABC, abstractmethod
 from configparser import ConfigParser
 from typing import Any
@@ -58,6 +59,7 @@ class AppConfig(ABC):
             "vision_enabled": "false",
         },
         "firebase": {"enabled": "false"},
+        "langsmith": {"enabled": "false"},
     }
 
     def __init__(self):
@@ -70,6 +72,16 @@ class AppConfig(ABC):
         """Determines if vision (image analysis) feature is enabled."""
         return self.config.getboolean("settings", "vision_enabled", fallback=False)
 
+    @property
+    def langsmith_enabled(self) -> bool:
+        """Determines if LangSmith feature is enabled."""
+        return self.config.getboolean("langsmith", "enabled", fallback=False)
+
+    @property
+    def langsmith_api_key(self) -> str:
+        """Retrieves the LangSmith API key."""
+        return self.config.get("langsmith", "api_key", fallback="")
+
     def _validate_config(self) -> None:
         """Validate that required configuration variables are present."""
         required_settings = ["openai_api_key"]
@@ -81,6 +93,9 @@ class AppConfig(ABC):
             assert (
                 setting in self.config["firebase"]
             ), f"Missing configuration for {setting}"
+
+        if self.langsmith_enabled:
+            assert self.langsmith_api_key, "Missing configuration for LangSmith API key"
 
     def _apply_settings_from_companion(
         self, companion: firestore.DocumentSnapshot
@@ -130,6 +145,15 @@ class AppConfig(ABC):
 
         # Apply the new configuration settings
         self.config.read_dict({"settings": settings})
+
+    def _apply_langsmith_settings(self):
+        """
+        Applies LangSmith settings if enabled.
+        Sets LangSmith API key as an environment variable.
+        """
+        if self.langsmith_enabled:
+            os.environ["LANGCHAIN_API_KEY"] = self.langsmith_api_key
+            os.environ["LANGCHAIN_TRACING_V2"] = "true"
 
     @abstractmethod
     def load_config(self):
