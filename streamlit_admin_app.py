@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-import streamlit as st
-from typing import List, Dict, Optional
 import csv
-from config.streamlit_config import StreamlitAppConfig
 from io import StringIO
+from typing import Dict, List, Optional
+
+import streamlit as st
+
+from config.streamlit_config import StreamlitAppConfig
+
 
 class StreamlitAdminApp:
     """
@@ -40,7 +43,9 @@ class StreamlitAdminApp:
             return companion.to_dict()
         return None
 
-    def upload_companion_data(self, companion_id: str, companion_data: Dict[str, str]) -> None:
+    def upload_companion_data(
+        self, companion_id: str, companion_data: Dict[str, str]
+    ) -> None:
         """
         Uploads companion data to Firestore.
 
@@ -61,6 +66,7 @@ class StreamlitAdminApp:
         companions_ref = self.db.collection("Companions")
         companions = companions_ref.stream()
         return [companion.id for companion in companions]
+
 
 def load_prefix_messages_from_csv(self, csv_content: str) -> List[Dict[str, str]]:
     """
@@ -110,10 +116,11 @@ def format_prefix_messages_for_display(self, messages: List[Dict[str, str]]) -> 
 
     for message in messages:
         # Convert Firestore role back to CSV role
-        csv_role = role_mappings.get(message['role'], message['role'])
-        writer.writerow([csv_role, message['content']])
+        csv_role = role_mappings.get(message["role"], message["role"])
+        writer.writerow([csv_role, message["content"]])
 
     return output.getvalue().strip()
+
 
 def main():
     """
@@ -131,7 +138,9 @@ def main():
     # Companion ID selection and existing data pre-fill logic
     companion_ids = admin_app.get_companion_ids()
     new_companion_option = "Add New Companion"
-    selected_companion_id = st.selectbox("Select Companion ID", [new_companion_option] + companion_ids)
+    selected_companion_id = st.selectbox(
+        "Select Companion ID", [new_companion_option] + companion_ids
+    )
 
     # Handling new companion ID input
     companion_id_to_upload = None
@@ -142,7 +151,9 @@ def main():
         companion_id_to_upload = selected_companion_id
         existing_data = admin_app.get_companion_data(selected_companion_id)
 
-    existing_prefix_messages_str = format_prefix_messages_for_display(existing_data.get("prefix_messages_content", []))
+    existing_prefix_messages_str = format_prefix_messages_for_display(
+        existing_data.get("prefix_messages_content", [])
+    )
 
     # Adjust the chat_models list based on existing data
     existing_model = existing_data.get("chat_model", "gpt-4")
@@ -152,15 +163,29 @@ def main():
 
     chat_model = st.selectbox("Chat Model", chat_models, index=chat_model_index)
 
-    system_prompt = st.text_area("System Prompt", value=existing_data.get("system_prompt", ""))
-    temperature = st.number_input("Temperature", min_value=0.0, max_value=2.0, step=0.01,
-                                  value=existing_data.get("temperature", 1.0))
+    system_prompt = st.text_area(
+        "System Prompt", value=existing_data.get("system_prompt", "")
+    )
+    temperature = st.number_input(
+        "Temperature",
+        min_value=0.0,
+        max_value=2.0,
+        step=0.01,
+        value=existing_data.get("temperature", 1.0),
+    )
 
     # Text area for editing or adding prefix messages
-    prefix_messages_str = st.text_area("Edit Prefix Messages (CSV format: Role,Content)", value=existing_prefix_messages_str)
+    prefix_messages_str = st.text_area(
+        "Edit Prefix Messages (CSV format: Role,Content)",
+        value=existing_prefix_messages_str,
+    )
 
     # Process the edited prefix messages from the text area
-    edited_prefix_messages = load_prefix_messages_from_csv(prefix_messages_str) if prefix_messages_str else []
+    edited_prefix_messages = (
+        load_prefix_messages_from_csv(prefix_messages_str)
+        if prefix_messages_str
+        else []
+    )
 
     # Companion data upload logic
     if companion_id_to_upload and st.button("Upload Companion Data"):
@@ -169,10 +194,11 @@ def main():
             "system_prompt": system_prompt,
             "temperature": temperature,
             "vision_enabled": False,
-            "prefix_messages_content": edited_prefix_messages
+            "prefix_messages_content": edited_prefix_messages,
         }
         admin_app.upload_companion_data(companion_id_to_upload, companion_data)
         st.success(f"Companion '{companion_id_to_upload}' data updated successfully.")
+
 
 if __name__ == "__main__":
     main()
