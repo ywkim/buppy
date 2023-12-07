@@ -103,7 +103,7 @@ def main():
 
     admin_app = StreamlitAdminApp()
 
-    default_chat_models = ["gpt-4", "gpt-4-1106-preview", "gpt-3.5-turbo"]
+    chat_models = ["gpt-4", "gpt-4-1106-preview", "gpt-3.5-turbo"]
 
     # Companion ID selection and existing data pre-fill logic
     companion_ids = admin_app.get_companion_ids()
@@ -115,9 +115,13 @@ def main():
     if selected_companion_id != new_companion_option:
         existing_data = admin_app.get_companion_data(selected_companion_id) or {}
 
-    # Dynamically adjust the chat_models list based on existing data
-    chat_models = list(set(default_chat_models + [existing_data.get("chat_model", "gpt-4")]))
-    chat_model = st.selectbox("Chat Model", chat_models, index=chat_models.index(existing_data.get("chat_model", "gpt-4")))
+    # Adjust the chat_models list based on existing data
+    existing_model = existing_data.get("chat_model", "gpt-4")
+    if existing_model not in chat_models:
+        chat_models.append(existing_model)
+    chat_model_index = chat_models.index(existing_model)
+
+    chat_model = st.selectbox("Chat Model", chat_models, index=chat_model_index)
 
     system_prompt = st.text_area("System Prompt", value=existing_data.get("system_prompt", ""))
     temperature = st.number_input("Temperature", min_value=0.0, max_value=2.0, step=0.01,
