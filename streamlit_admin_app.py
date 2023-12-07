@@ -50,7 +50,6 @@ class StreamlitAdminApp:
         """
         companions_ref = self.db.collection("Companions")
         companions_ref.document(companion_id).set(companion_data)
-        st.success(f"Companion '{companion_id}' data successfully uploaded.")
 
     def get_companion_ids(self) -> List[str]:
         """
@@ -134,13 +133,16 @@ def main():
     new_companion_option = "Add New Companion"
     selected_companion_id = st.selectbox("Select Companion ID", [new_companion_option] + companion_ids)
 
-    # Pre-fill Existing Companion Data
-    existing_data = {}
-    existing_prefix_messages_str = ""
-    if selected_companion_id != new_companion_option:
-        existing_data = admin_app.get_companion_data(selected_companion_id) or {}
-        if "prefix_messages_content" in existing_data:
-            existing_prefix_messages_str = admin_app.format_prefix_messages_for_display(existing_data["prefix_messages_content"])
+    # Handling new companion ID input
+    companion_id_to_upload = None
+    if selected_companion_id == new_companion_option:
+        companion_id_to_upload = st.text_input("Enter New Companion ID")
+        existing_data = {}
+    else:
+        companion_id_to_upload = selected_companion_id
+        existing_data = admin_app.get_companion_data(selected_companion_id)
+
+    existing_prefix_messages_str = admin_app.format_prefix_messages_for_display(existing_data.get("prefix_messages_content", []))
 
     # Adjust the chat_models list based on existing data
     existing_model = existing_data.get("chat_model", "gpt-4")
@@ -155,16 +157,13 @@ def main():
                                   value=existing_data.get("temperature", 1.0))
 
     # Text area for editing or adding prefix messages
-    prefix_messages_str = st.text_area("Edit Prefix Messages (CSV format: Role,Content)",
-                                       value=existing_prefix_messages_str)
+    prefix_messages_str = st.text_area("Edit Prefix Messages (CSV format: Role,Content)", value=existing_prefix_messages_str)
 
     # Process the edited prefix messages from the text area
-    edited_prefix_messages = []
-    if prefix_messages_str:
-        edited_prefix_messages = admin_app.load_prefix_messages_from_csv(prefix_messages_str)
+    edited_prefix_messages = admin_app.load_prefix_messages_from_csv(prefix_messages_str) if prefix_messages_str else []
 
     # Companion data upload logic
-    if st.button("Upload Companion Data"):
+    if companion_id_to_upload and st.button("Upload Companion Data"):
         companion_data = {
             "chat_model": chat_model,
             "system_prompt": system_prompt,
@@ -172,11 +171,8 @@ def main():
             "vision_enabled": False,
             "prefix_messages_content": edited_prefix_messages
         }
-        companion_id_to_upload = selected_companion_id if selected_companion_id != new_companion_option else st.text_input("Enter New Companion ID")
-        if companion_id_to_upload:
-            if st.confirm("Are you sure you want to update the companion data?"):
-                admin_app.upload_companion_data(companion_id_to_upload, companion_data)
-                st.success("Companion data updated successfully.")
+        admin_app.upload_companion_data(companion_id_to_upload, companion_data)
+        st.success(f"Companion '{companion_id_to_upload}' data updated successfully.")
 
 if __name__ == "__main__":
     main()
