@@ -62,58 +62,58 @@ class StreamlitAdminApp:
         companions = companions_ref.stream()
         return [companion.id for companion in companions]
 
-    def load_prefix_messages_from_csv(self, csv_content: str) -> List[Dict[str, str]]:
-        """
-        Load prefix messages from a CSV string and return them as a list of dictionaries.
+def load_prefix_messages_from_csv(self, csv_content: str) -> List[Dict[str, str]]:
+    """
+    Load prefix messages from a CSV string and return them as a list of dictionaries.
 
-        Args:
-            csv_content (str): The string content of the CSV file.
+    Args:
+        csv_content (str): The string content of the CSV file.
 
-        Returns:
-            List[Dict[str, str]]: A list of dictionaries representing the messages.
+    Returns:
+        List[Dict[str, str]]: A list of dictionaries representing the messages.
 
-        The CSV file should contain messages with their roles ('AI', 'Human', 'System')
-        and content. These roles are mapped to Firestore roles ('assistant', 'user', 'system').
-        """
-        role_mappings = {"AI": "assistant", "Human": "user", "System": "system"}
+    The CSV file should contain messages with their roles ('AI', 'Human', 'System')
+    and content. These roles are mapped to Firestore roles ('assistant', 'user', 'system').
+    """
+    role_mappings = {"AI": "assistant", "Human": "user", "System": "system"}
 
-        messages: List[Dict[str, str]] = []
+    messages: List[Dict[str, str]] = []
 
-        reader = csv.reader(StringIO(csv_content))
+    reader = csv.reader(StringIO(csv_content))
 
-        for row in reader:
-            role, content = row
-            if role not in role_mappings:
-                raise ValueError(
-                    f"Invalid role '{role}' in CSV content. Must be one of {list(role_mappings.keys())}."
-                )
+    for row in reader:
+        role, content = row
+        if role not in role_mappings:
+            raise ValueError(
+                f"Invalid role '{role}' in CSV content. Must be one of {list(role_mappings.keys())}."
+            )
 
-            firestore_role = role_mappings[role]
-            messages.append({"role": firestore_role, "content": content})
+        firestore_role = role_mappings[role]
+        messages.append({"role": firestore_role, "content": content})
 
-        return messages
+    return messages
 
 
-    def format_prefix_messages_for_display(self, messages: List[Dict[str, str]]) -> str:
-        """
-        Formats the prefix messages as a string for display in a text area.
+def format_prefix_messages_for_display(self, messages: List[Dict[str, str]]) -> str:
+    """
+    Formats the prefix messages as a string for display in a text area.
 
-        Args:
-            messages (List[Dict[str, str]]): The list of prefix messages.
+    Args:
+        messages (List[Dict[str, str]]): The list of prefix messages.
 
-        Returns:
-            str: The formatted string representation of the messages in CSV format.
-        """
-        output = StringIO()
-        writer = csv.writer(output)
-        role_mappings = {"assistant": "AI", "user": "Human", "system": "System"}
+    Returns:
+        str: The formatted string representation of the messages in CSV format.
+    """
+    output = StringIO()
+    writer = csv.writer(output)
+    role_mappings = {"assistant": "AI", "user": "Human", "system": "System"}
 
-        for message in messages:
-            # Convert Firestore role back to CSV role
-            csv_role = role_mappings.get(message['role'], message['role'])
-            writer.writerow([csv_role, message['content']])
+    for message in messages:
+        # Convert Firestore role back to CSV role
+        csv_role = role_mappings.get(message['role'], message['role'])
+        writer.writerow([csv_role, message['content']])
 
-        return output.getvalue().strip()
+    return output.getvalue().strip()
 
 def main():
     """
@@ -142,7 +142,7 @@ def main():
         companion_id_to_upload = selected_companion_id
         existing_data = admin_app.get_companion_data(selected_companion_id)
 
-    existing_prefix_messages_str = admin_app.format_prefix_messages_for_display(existing_data.get("prefix_messages_content", []))
+    existing_prefix_messages_str = format_prefix_messages_for_display(existing_data.get("prefix_messages_content", []))
 
     # Adjust the chat_models list based on existing data
     existing_model = existing_data.get("chat_model", "gpt-4")
@@ -160,7 +160,7 @@ def main():
     prefix_messages_str = st.text_area("Edit Prefix Messages (CSV format: Role,Content)", value=existing_prefix_messages_str)
 
     # Process the edited prefix messages from the text area
-    edited_prefix_messages = admin_app.load_prefix_messages_from_csv(prefix_messages_str) if prefix_messages_str else []
+    edited_prefix_messages = load_prefix_messages_from_csv(prefix_messages_str) if prefix_messages_str else []
 
     # Companion data upload logic
     if companion_id_to_upload and st.button("Upload Companion Data"):
