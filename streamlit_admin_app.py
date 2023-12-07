@@ -4,6 +4,7 @@ import streamlit as st
 from typing import List, Dict, Optional
 import csv
 from config.streamlit_config import StreamlitAppConfig
+from io import StringIO
 
 class StreamlitAdminApp:
     """
@@ -62,12 +63,12 @@ class StreamlitAdminApp:
         companions = companions_ref.stream()
         return [companion.id for companion in companions]
 
-    def load_prefix_messages_from_csv(self, uploaded_file) -> List[Dict[str, str]]:
+    def load_prefix_messages_from_csv(self, csv_content: str) -> List[Dict[str, str]]:
         """
-        Loads prefix messages from an uploaded CSV file and returns them as a list of dictionaries.
+        Load prefix messages from a CSV string and return them as a list of dictionaries.
 
         Args:
-            uploaded_file: The file-like object uploaded through Streamlit's file_uploader.
+            csv_content (str): The string content of the CSV file.
 
         Returns:
             List[Dict[str, str]]: A list of dictionaries representing the messages.
@@ -77,20 +78,43 @@ class StreamlitAdminApp:
         """
         role_mappings = {"AI": "assistant", "Human": "user", "System": "system"}
 
-        messages: list[dict[str, str]] = []
+        messages: List[Dict[str, str]] = []
 
-        reader = csv.reader(uploaded_file)
+        reader = csv.reader(StringIO(csv_content))
+
         for row in reader:
             role, content = row
             if role not in role_mappings:
                 raise ValueError(
-                    f"Invalid role '{role}' in CSV file. Must be one of {list(role_mappings.keys())}."
+                    f"Invalid role '{role}' in CSV content. Must be one of {list(role_mappings.keys())}."
                 )
+
             firestore_role = role_mappings[role]
             messages.append({"role": firestore_role, "content": content})
 
         return messages
 
+
+    def format_prefix_messages_for_display(self, messages: List[Dict[str, str]]) -> str:
+        """
+        Formats the prefix messages as a string for display in a text area.
+
+        Args:
+            messages (List[Dict[str, str]]): The list of prefix messages.
+
+        Returns:
+            str: The formatted string representation of the messages in CSV format.
+        """
+        output = StringIO()
+        writer = csv.writer(output)
+        role_mappings = {"assistant": "AI", "user": "Human", "system": "System"}
+
+        for message in messages:
+            # Convert Firestore role back to CSV role
+            csv_role = role_mappings.get(message['role'], message['role'])
+            writer.writerow([csv_role, message['content']])
+
+        return output.getvalue().strip()
 
 def main():
     """
@@ -112,8 +136,11 @@ def main():
 
     # Pre-fill Existing Companion Data
     existing_data = {}
+    existing_prefix_messages_str = ""
     if selected_companion_id != new_companion_option:
         existing_data = admin_app.get_companion_data(selected_companion_id) or {}
+        if "prefix_messages_content" in existing_data:
+            existing_prefix_messages_str = admin_app.format_prefix_messages_for_display(existing_data["prefix_messages_content"])
 
     # Adjust the chat_models list based on existing data
     existing_model = existing_data.get("chat_model", "gpt-4")
@@ -127,24 +154,29 @@ def main():
     temperature = st.number_input("Temperature", min_value=0.0, max_value=2.0, step=0.01,
                                   value=existing_data.get("temperature", 1.0))
 
-    # CSV File Uploader for Prefix Messages
-    uploaded_file = st.file_uploader("Upload CSV for Prefix Messages", type="csv")
-    prefix_messages_content = []
-    if uploaded_file is not None:
-        prefix_messages_content = admin_app.load_prefix_messages_from_csv(uploaded_file)
+    # Text area for editing or adding prefix messages
+    prefix_messages_str = st.text_area("Edit Prefix Messages (CSV format: Role,Content)",
+                                       value=existing_prefix_messages_str)
+
+    # Process the edited prefix messages from the text area
+    edited_prefix_messages = []
+    if prefix_messages_str:
+        edited_prefix_messages = admin_app.load_prefix_messages_from_csv(prefix_messages_str)
 
     # Companion data upload logic
-    if st.button("Upload Data"):
+    if st.button("Upload Companion Data"):
         companion_data = {
             "chat_model": chat_model,
             "system_prompt": system_prompt,
             "temperature": temperature,
             "vision_enabled": False,
-            "prefix_messages_content": prefix_messages_content
+            "prefix_messages_content": edited_prefix_messages
         }
         companion_id_to_upload = selected_companion_id if selected_companion_id != new_companion_option else st.text_input("Enter New Companion ID")
         if companion_id_to_upload:
-            admin_app.upload_companion_data(companion_id_to_upload, companion_data)
+            if st.confirm("Are you sure you want to update the companion data?"):
+                admin_app.upload_companion_data(companion_id_to_upload, companion_data)
+                st.success("Companion data updated successfully.")
 
 if __name__ == "__main__":
     main()
