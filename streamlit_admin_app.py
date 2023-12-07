@@ -144,7 +144,7 @@ def main():
 
     # Handling new companion ID input
     companion_id_to_upload = None
-    existing_data: Dict[str, Any] = {}
+    existing_data: dict[str, Any] = {}
     if selected_companion_id == new_companion_option:
         companion_id_to_upload = st.text_input("Enter New Companion ID")
         existing_data = {}
