@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import csv
 from io import StringIO
-from typing import Dict, List, Optional
 
 import streamlit as st
 
@@ -27,7 +26,7 @@ class StreamlitAdminApp:
         self.app_config.load_config()
         self.db = self.app_config._initialize_firebase_client()
 
-    def get_companion_data(self, companion_id: str) -> Optional[Dict[str, str]]:
+    def get_companion_data(self, companion_id: str) -> dict[str, str] | None:
         """
         Retrieves companion data from Firestore.
 
@@ -35,7 +34,7 @@ class StreamlitAdminApp:
             companion_id (str): The unique identifier of the companion.
 
         Returns:
-            Optional[Dict[str, str]]: The data of the companion if found, otherwise None.
+            Optional[dict[str, str]]: The data of the companion if found, otherwise None.
         """
         companion_ref = self.db.collection("Companions").document(companion_id)
         companion = companion_ref.get()
@@ -44,31 +43,31 @@ class StreamlitAdminApp:
         return None
 
     def upload_companion_data(
-        self, companion_id: str, companion_data: Dict[str, str]
+        self, companion_id: str, companion_data: dict[str, str]
     ) -> None:
         """
         Uploads companion data to Firestore.
 
         Args:
             companion_id (str): The unique identifier of the companion.
-            companion_data (Dict[str, str]): The companion data to upload.
+            companion_data (dict[str, str]): The companion data to upload.
         """
         companions_ref = self.db.collection("Companions")
         companions_ref.document(companion_id).set(companion_data)
 
-    def get_companion_ids(self) -> List[str]:
+    def get_companion_ids(self) -> list[str]:
         """
         Retrieves all companion IDs from Firestore.
 
         Returns:
-            List[str]: A list of companion IDs.
+            list[str]: A list of companion IDs.
         """
         companions_ref = self.db.collection("Companions")
         companions = companions_ref.stream()
         return [companion.id for companion in companions]
 
 
-def load_prefix_messages_from_csv(self, csv_content: str) -> List[Dict[str, str]]:
+def load_prefix_messages_from_csv(self, csv_content: str) -> list[dict[str, str]]:
     """
     Load prefix messages from a CSV string and return them as a list of dictionaries.
 
@@ -76,14 +75,14 @@ def load_prefix_messages_from_csv(self, csv_content: str) -> List[Dict[str, str]
         csv_content (str): The string content of the CSV file.
 
     Returns:
-        List[Dict[str, str]]: A list of dictionaries representing the messages.
+        list[dict[str, str]]: A list of dictionaries representing the messages.
 
     The CSV file should contain messages with their roles ('AI', 'Human', 'System')
     and content. These roles are mapped to Firestore roles ('assistant', 'user', 'system').
     """
     role_mappings = {"AI": "assistant", "Human": "user", "System": "system"}
 
-    messages: List[Dict[str, str]] = []
+    messages: list[dict[str, str]] = []
 
     reader = csv.reader(StringIO(csv_content))
 
@@ -100,12 +99,12 @@ def load_prefix_messages_from_csv(self, csv_content: str) -> List[Dict[str, str]
     return messages
 
 
-def format_prefix_messages_for_display(self, messages: List[Dict[str, str]]) -> str:
+def format_prefix_messages_for_display(self, messages: list[dict[str, str]]) -> str:
     """
     Formats the prefix messages as a string for display in a text area.
 
     Args:
-        messages (List[Dict[str, str]]): The list of prefix messages.
+        messages (list[dict[str, str]]): The list of prefix messages.
 
     Returns:
         str: The formatted string representation of the messages in CSV format.
