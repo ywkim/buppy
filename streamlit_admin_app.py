@@ -44,10 +44,7 @@ class StreamlitAdminApp:
         companion = companion_ref.get()
         if companion.exists:
             return companion.to_dict()
-        else:
-            raise ValueError(
-                f"Companion document with ID {companion_id} does not exist."
-            )
+        raise ValueError(f"Companion document with ID {companion_id} does not exist.")
 
     def upload_companion_data(
         self, companion_id: str, companion_data: dict[str, str]
