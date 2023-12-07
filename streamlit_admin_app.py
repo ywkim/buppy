@@ -45,7 +45,9 @@ class StreamlitAdminApp:
         if companion.exists:
             return companion.to_dict()
         else:
-            raise ValueError(f"Companion document with ID {companion_id} does not exist.")
+            raise ValueError(
+                f"Companion document with ID {companion_id} does not exist."
+            )
 
     def upload_companion_data(
         self, companion_id: str, companion_data: dict[str, str]
@@ -149,7 +151,7 @@ def main():
     # Handling new companion ID input
     companion_id_to_upload = None
     existing_data: dict[str, Any] = {}
-    if selected_companion_id == new_companion_option:
+    if selected_companion_id == new_companion_option or selected_companion_id is None:
         companion_id_to_upload = st.text_input("Enter New Companion ID")
         existing_data = {}
     else:
