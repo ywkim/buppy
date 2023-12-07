@@ -67,7 +67,7 @@ class StreamlitAdminApp:
         return [companion.id for companion in companions]
 
 
-def load_prefix_messages_from_csv(self, csv_content: str) -> list[dict[str, str]]:
+def load_prefix_messages_from_csv(csv_content: str) -> list[dict[str, str]]:
     """
     Load prefix messages from a CSV string and return them as a list of dictionaries.
 
@@ -99,7 +99,7 @@ def load_prefix_messages_from_csv(self, csv_content: str) -> list[dict[str, str]
     return messages
 
 
-def format_prefix_messages_for_display(self, messages: list[dict[str, str]]) -> str:
+def format_prefix_messages_for_display(messages: list[dict[str, str]]) -> str:
     """
     Formats the prefix messages as a string for display in a text area.
 
