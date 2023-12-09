@@ -60,6 +60,9 @@ class AppConfig(ABC):
         },
         "firebase": {"enabled": "false"},
         "langsmith": {"enabled": "false"},
+        "proactive_messaging": {
+            "enabled": "false",
+        },
     }
 
     def __init__(self):
@@ -82,6 +85,26 @@ class AppConfig(ABC):
         """Retrieves the LangSmith API key."""
         return self.config.get("langsmith", "api_key", fallback="")
 
+    @property
+    def proactive_messaging_enabled(self) -> bool:
+        """Determines if proactive messaging feature is enabled."""
+        return self.config.getboolean("proactive_messaging", "enabled", fallback=False)
+
+    @property
+    def proactive_message_interval_days(self) -> float:
+        """Returns the average interval in days between proactive messages."""
+        return self.config.getfloat("proactive_messaging", "interval_days")
+
+    @property
+    def proactive_system_prompt(self) -> str:
+        """Returns the system prompt for proactive messaging."""
+        return self.config.get("proactive_messaging", "system_prompt")
+
+    @property
+    def proactive_slack_channel(self) -> str:
+        """Returns the Slack channel ID where proactive messages will be posted."""
+        return self.config.get("proactive_messaging", "slack_channel")
+
     def _validate_config(self) -> None:
         """Validate that required configuration variables are present."""
         required_settings = ["openai_api_key"]
@@ -97,9 +120,7 @@ class AppConfig(ABC):
         if self.langsmith_enabled:
             assert self.langsmith_api_key, "Missing configuration for LangSmith API key"
 
-    def _apply_settings_from_companion(
-        self, companion: firestore.DocumentSnapshot
-    ) -> None:
+    def _apply_settings_from_companion(self, companion: firestore.DocumentSnapshot) -> None:
         """
         Applies settings from the given companion Firestore document to the provided app configuration.
 

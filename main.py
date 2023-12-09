@@ -9,6 +9,9 @@ import os
 import re
 from typing import Any
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from random import randint
+from datetime import datetime, timedelta
 import aiohttp
 import emoji_data_python
 from aiohttp import ClientError
@@ -19,7 +22,7 @@ from slack_bolt.async_app import AsyncApp
 from slack_bolt.context.say.async_say import AsyncSay
 from slack_sdk.web.async_client import AsyncWebClient
 
-from config.app_config import AppConfig, init_chat_model
+from config.app_config import AppConfig, init_chat_model, safely_get_field
 from utils.logging_utils import create_log_message
 from utils.message_utils import prepare_chat_messages
 
@@ -98,6 +101,30 @@ class SlackAppConfig(AppConfig):
         self.bot_token = self.config.get("api", "slack_bot_token")
         self.app_token = self.config.get("api", "slack_app_token")
 
+    def _apply_proactive_messaging_settings_from_bot(self, bot_document: firestore.DocumentSnapshot) -> None:
+        """
+        Applies proactive messaging settings from the provided bot document snapshot.
+
+        This method extracts the proactive messaging settings from the Firestore
+        document snapshot of the bot and applies them to the current configuration.
+        It ensures that the proactive messaging feature and its related settings
+        (interval days, system prompt, and Slack channel) are configured according
+        to the bot's settings in Firestore.
+
+        Args:
+            bot_document (firestore.DocumentSnapshot): A snapshot of the Firestore
+                                                      document for the bot.
+        """
+        proactive_messaging_settings = {
+            "enabled": safely_get_field(bot_document, "proactive_messaging.enabled", "false"),
+            "interval_days": bot_document.get("proactive_messaging.interval_days"),
+            "system_prompt": bot_document.get("proactive_messaging.system_prompt"),
+            "slack_channel": bot_document.get("proactive_messaging.slack_channel"),
+        }
+
+        self.config.read_dict({"proactive_messaging": proactive_messaging_settings})
+
+
     async def load_config_from_firebase(self, bot_user_id: str) -> None:
         """
         Load configuration from Firebase Firestore. Uses default values from self.DEFAULT_CONFIG
@@ -117,6 +144,9 @@ class SlackAppConfig(AppConfig):
             raise FileNotFoundError(
                 f"Bot with ID {bot_user_id} does not exist in Firebase."
             )
+
+        self._apply_proactive_messaging_settings_from_bot(bot_document)
+
         companion_id = bot.get("CompanionId")
         companion_ref = db.collection("Companions").document(companion_id)
         companion = await companion_ref.get()
@@ -146,6 +176,28 @@ class SlackAppConfig(AppConfig):
 
         self._validate_config()
 
+async def schedule_proactive_messages(app: AsyncApp, app_config: SlackAppConfig):
+    if not app_config.proactive_messaging_enabled:
+        return
+
+    def schedule_next_message():
+        interval = app_config.proactive_message_interval_days
+        next_schedule_time = datetime.now() + timedelta(days=interval * random.random())
+        scheduler.add_job(
+            send_proactive_message,
+            'date',
+            run_date=next_schedule_time,
+            args=[app, app_config.proactive_system_prompt, app_config.proactive_slack_channel]
+        )
+
+    schedule_next_message()  # Initial scheduling
+
+    # Reschedule after each message is sent
+    async def send_proactive_message(app: AsyncApp, message: str, channel: str):
+        await app.client.chat_postMessage(channel=channel, text=message)
+        schedule_next_message()  # Schedule the next message after sending one
+
+    scheduler.start()
 
 def extract_image_url(message: dict[str, Any]) -> str | None:
     """
@@ -485,6 +537,9 @@ async def main():
 
     logging.info("Registering event and command handlers")
     register_events_and_commands(app, app_config)
+
+    # Inside main function, after initializing AsyncApp and SocketModeHandler
+    await schedule_proactive_messages(app, app_config)
 
     logging.info("Starting SocketModeHandler")
     await handler.start_async()
