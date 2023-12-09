@@ -104,9 +104,9 @@ poetry run python upload_companion.py path/to/config.ini
 
 ### Slack 봇 설정
 
-Buppy를 Slack에 추가하려면 다음의 단계를 따라주세요.
+Buppy를 Slack에 추가하고 활용하기 위한 단계를 아래에 자세히 설명합니다. 이 과정은 두 가지 방법으로 수행할 수 있습니다: 수동 설정 및 앱 매니페스트를 사용한 자동화된 설정.
 
-#### Slack 앱 생성
+#### 1. 수동 설정 방법
 
 아래의 링크에서 Slack 앱을 생성하세요.
 
@@ -114,7 +114,7 @@ Buppy를 Slack에 추가하려면 다음의 단계를 따라주세요.
 https://api.slack.com/apps
 ```
 
-#### 봇 권한과 스코프 추가
+##### 봇 권한과 스코프 추가
 
 생성한 앱 설정 페이지에서 'OAuth & Permissions' 섹션으로 이동하세요. 'Scopes'에 들어가 'Bot Token Scopes'를 클릭하고 아래에 나열된 권한을 추가하세요:
 
@@ -124,26 +124,77 @@ https://api.slack.com/apps
 - `reactions:write`: 앱이 메시지에 이모티콘을 달 수 있게 합니다.
 - `files:read`: 앱이 Slack에서 공유된 파일의 정보를 읽을 수 있게 합니다.
 
-#### 앱 설치와 봇 토큰 복사
+##### 앱 설치와 봇 토큰 복사
 
 'Install App'을 클릭하여 앱을 워크스페이스에 설치하고, 'Bot User OAuth Token'을 복사합니다. 이 토큰을 `config.ini` 파일의 `slack_bot_token`에 붙여넣습니다.
 
-#### Socket Mode 활성화와 App Level 토큰 생성
+##### Socket Mode 활성화와 App Level 토큰 생성
 
 'Socket Mode'에 들어가 Socket Mode를 활성화하고 'App Level Tokens'를 생성하세요. 이 토큰을 `config.ini` 파일의 `slack_app_token`에 붙여넣습니다.
 
-#### 이벤트 구독 설정
+##### 이벤트 구독 설정
 
 'Event Subscriptions' 섹션에 들어가 'Enable Events'를 클릭하여 이벤트를 활성화합니다. 'Subscribe to bot events'에서 아래 이벤트를 추가하세요:
 
 - `app_mention`: Buppy 봇이 언급되었을 때에 대한 이벤트를 리스닝합니다.
 - `message.channels`: 채널 내의 메세지에 대한 이벤트를 리스닝합니다.
 
-#### 앱을 채널에 추가
+##### 앱을 채널에 추가
 
 앱의 설정을 모두 완료한 후, 워크스페이스로 가서 Buppy가 동작할 채널에 가서 앱을 추가하세요.
 
 이제 Buppy는 설정된 Slack 채널에서 잘 동작할 것입니다. 앱을 언급하거나 직접 질문하면 Buppy가 대답을 생성하여 반환합니다.
+
+#### 2. 앱 매니페스트를 사용한 설정
+
+앱 매니페스트를 사용하면 Buppy 봇 설정을 보다 효율적이고 일관되게 관리할 수 있습니다. 아래 단계를 따라 Slack 앱 매니페스트를 생성하고 적용하는 방법을 안내합니다.
+
+##### 매니페스트 파일 생성
+
+먼저, Buppy의 기능과 권한을 정의하는 YAML 형식의 매니페스트 파일을 생성합니다. 다음은 Buppy 앱을 위한 기본 매니페스트 예제입니다:
+
+```yaml
+display_information:
+  name: Buppy
+
+features:
+  bot_user:
+    display_name: Buppy
+    always_online: true
+
+oauth_config:
+  scopes:
+    bot:
+      - channels:read
+      - channels:history
+      - chat:write
+      - reactions:write
+      - files:read
+
+settings:
+  event_subscriptions:
+    bot_events:
+      - app_mention
+      - message.channels
+
+  interactivity:
+    is_enabled: true
+
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: false
+```
+
+##### Slack에서 매니페스트 업로드
+
+1. Slack API 웹사이트([api.slack.com](https://api.slack.com))에 접속하여 'Your Apps'로 이동합니다.
+2. 'Create New App'을 클릭하고 'From an app manifest' 옵션을 선택합니다.
+3. 워크스페이스를 선택하고, 앞서 생성한 매니페스트 파일의 내용을 붙여넣습니다.
+4. 'Review'를 클릭하여 매니페스트를 검토한 후, 'Create'를 클릭하여 앱을 생성합니다.
+
+##### 생성된 앱 설정 확인 및 수정
+
+앱이 생성되면, Slack에서 자동으로 설정한 권한과 기능을 확인하고 필요에 따라 추가적인 설정을 할 수 있습니다. 예를 들어, 'Interactivity & Shortcuts' 메뉴에서 인터랙티브 기능을 추가로 설정하거나, 'Event Subscriptions'에서 추가 이벤트를 구독할 수 있습니다.
 
 ### Streamlit 웹 인터페이스 설정
 
