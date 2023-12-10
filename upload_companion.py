@@ -201,7 +201,7 @@ def main():
         proactive_enabled = config.getboolean(
             "proactive_messaging", "enabled", fallback=None
         )
-        proactive_messaging_config = {"enabled": proactive_enabled}
+        proactive_messaging_config: dict[str, Any] = {"enabled": proactive_enabled}
 
         if proactive_enabled:
             proactive_messaging_config["interval_days"] = config.getfloat(
