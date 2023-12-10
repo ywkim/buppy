@@ -63,6 +63,21 @@ vision_enabled = false
 
 OpenAI의 API Key는 [OpenAI 플랫폼](https://platform.openai.com/account/api-keys)에서 생성할 수 있습니다. 생성한 Key를 위의 설정 예제에 있는 `OPENAI_API_KEY` 위치에 붙여넣으세요.
 
+#### Proactive Messaging 설정
+
+Buppy는 사용자의 직접적인 요청이나 명령 없이도 자체적으로 메시지를 보낼 수 있는 Proactive Messaging 기능을 지원합니다. 이 기능을 활성화하려면 `config.ini` 파일에 `proactive_messaging` 섹션을 추가하고 관련 설정을 구성해야 합니다.
+
+```ini
+[proactive_messaging]
+enabled = true  # Proactive Messaging 기능 활성화 여부
+interval_days = 2.5  # 메시지를 보내는 평균 일수 간격
+system_prompt = "Your proactive message prompt"  # 메시지 생성을 위한 시스템 프롬프트
+slack_channel = "YOUR_SLACK_CHANNEL_ID"  # 메시지를 보낼 Slack 채널 ID
+temperature = 1  # 메시지 생성의 다양성과 창의성을 결정하는 온도 값
+```
+
+이 설정을 완료하면 Buppy는 지정된 빈도와 시스템 프롬프트를 사용하여 자동으로 메시지를 생성하고 지정된 Slack 채널에 메시지를 보냅니다.
+
 ### Streamlit 설정
 
 Streamlit 웹 인터페이스를 위해, `.streamlit/secrets.toml` 파일에 필요한 설정을 추가합니다. 이 파일은 Streamlit 앱의 설정 정보를 저장하는 데 사용됩니다. 다음은 설정 예제입니다:
