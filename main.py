@@ -22,7 +22,7 @@ from slack_bolt.async_app import AsyncApp
 from slack_bolt.context.say.async_say import AsyncSay
 from slack_sdk.web.async_client import AsyncWebClient
 
-from config.app_config import AppConfig, init_chat_model, safely_get_field
+from config.app_config import AppConfig, init_chat_model, safely_get_field, init_proactive_chat_model
 from utils.logging_utils import create_log_message
 from utils.message_utils import prepare_chat_messages
 
@@ -54,7 +54,7 @@ class SlackAppConfig(AppConfig):
 
     def load_config_from_env_vars(self) -> None:
         """Load configuration from environment variables."""
-        env_config: dict[str, dict[str, Any]] = {
+        env_config: dict[str, dict[str, str]] = {
             "api": {
                 "openai_api_key": os.environ.get("OPENAI_API_KEY"),
                 "slack_bot_token": os.environ.get("SLACK_BOT_TOKEN"),
@@ -68,16 +68,16 @@ class SlackAppConfig(AppConfig):
                     "SYSTEM_PROMPT", self.DEFAULT_CONFIG["settings"]["system_prompt"]
                 ),
                 "temperature": os.environ.get(
-                    "TEMPERATURE", self.DEFAULT_CONFIG["settings"]["temperature"]
+                    "TEMPERATURE", str(self.DEFAULT_CONFIG["settings"]["temperature"])
                 ),
                 "vision_enabled": os.environ.get(
-                    "VISION_ENABLED", self.DEFAULT_CONFIG["settings"]["vision_enabled"]
+                    "VISION_ENABLED", str(self.DEFAULT_CONFIG["settings"]["vision_enabled"])
                 ).lower()
                 in {"true", "1", "yes"},
             },
             "firebase": {
                 "enabled": os.environ.get(
-                    "FIREBASE_ENABLED", self.DEFAULT_CONFIG["firebase"]["enabled"]
+                    "FIREBASE_ENABLED", str(self.DEFAULT_CONFIG["firebase"]["enabled"])
                 ).lower()
                 in {"true", "1", "yes"}
             },
@@ -115,11 +115,12 @@ class SlackAppConfig(AppConfig):
             bot_document (firestore.DocumentSnapshot): A snapshot of the Firestore
                                                       document for the bot.
         """
-        proactive_messaging_settings = {
-            "enabled": safely_get_field(bot_document, "proactive_messaging.enabled", "false"),
+        proactive_messaging_settings: dict[str, dict[str, str]] = {
+            "enabled": safely_get_field(bot_document, "proactive_messaging.enabled", str(self.DEFAULT_CONFIG["proactive_messaging"]["enabled"])),
             "interval_days": bot_document.get("proactive_messaging.interval_days"),
             "system_prompt": bot_document.get("proactive_messaging.system_prompt"),
             "slack_channel": bot_document.get("proactive_messaging.slack_channel"),
+            "temperature": bot_document.get("proactive_messaging.temperature", str(self.DEFAULT_CONFIG["proactive_messaging"]["temperature"])),
         }
 
         self.config.read_dict({"proactive_messaging": proactive_messaging_settings})
@@ -176,7 +177,18 @@ class SlackAppConfig(AppConfig):
 
         self._validate_config()
 
-async def schedule_proactive_messages(app: AsyncApp, app_config: SlackAppConfig, scheduler: AsyncIOScheduler):
+
+async def schedule_next_proactive_message(app: AsyncApp, app_config: SlackAppConfig, scheduler: AsyncIOScheduler):
+    """
+    Schedules the next proactive message.
+
+    This function calculates the next time to send a proactive message based on the
+    interval setting and schedules the message accordingly.
+
+    Args:
+        app_config (SlackAppConfig): Configuration object containing settings.
+        scheduler (AsyncIOScheduler): Scheduler instance for scheduling messages.
+    """
     interval = app_config.proactive_message_interval_days
     next_schedule_time = datetime.now() + timedelta(days=interval)
 
@@ -186,13 +198,44 @@ async def schedule_proactive_messages(app: AsyncApp, app_config: SlackAppConfig,
         run_date=next_schedule_time,
         args=[app, app_config, scheduler]
     )
+
+    logging.info(f"Next proactive message scheduled for: {next_schedule_time}")
+
 async def send_proactive_message(app: AsyncApp, app_config: SlackAppConfig, scheduler: AsyncIOScheduler):
-    message = app_config.proactive_system_prompt
+    """
+    Sends a proactive message to the specified Slack channel.
+
+    This function generates a proactive message using the chat model based on the
+    system prompt configured in the app settings. It then sends the generated message
+    to the specified Slack channel and schedules the next proactive message.
+
+    Args:
+        app (AsyncApp): The Slack app instance used for sending messages.
+        app_config (SlackAppConfig): Configuration object containing settings.
+        scheduler (AsyncIOScheduler): Scheduler instance for scheduling messages.
+
+    Raises:
+        Exception: If there is an error in generating or sending the message.
+    """
+    # Initialize chat model and generate message
+    chat = init_proactive_chat_model(app_config)
+    system_prompt = SystemMessage(content=app_config.proactive_system_prompt)
+    resp = await chat.agenerate([[system_prompt]])
+    message = resp.generations[0][0].text
+
+    # Send the generated message to the specified Slack channel
     channel = app_config.proactive_slack_channel
     await app.client.chat_postMessage(channel=channel, text=message)
 
-    # Reschedule the next proactive message
-    schedule_proactive_messages(app, app_config, scheduler)
+    logging.info(            create_log_message(
+                "Proactive message sent to channel",
+                channel=channel,
+                text=message,
+            )
+)
+
+    # Schedule the next proactive message
+    await schedule_next_proactive_message(app, app_config, scheduler)
 
 def extract_image_url(message: dict[str, Any]) -> str | None:
     """
@@ -535,8 +578,9 @@ async def main():
 
     if app_config.proactive_messaging_enabled:
         scheduler = AsyncIOScheduler()
-        await schedule_proactive_messages(app, app_config, scheduler)
+        await schedule_next_proactive_message(app, app_config, scheduler)
         scheduler.start()
+        logging.info("Proactive messaging has been scheduled.")
 
     logging.info("Starting SocketModeHandler")
     await handler.start_async()

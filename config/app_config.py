@@ -55,13 +55,14 @@ class AppConfig(ABC):
         "settings": {
             "chat_model": "gpt-4",
             "system_prompt": "You are a helpful assistant.",
-            "temperature": "0",
-            "vision_enabled": "false",
+            "temperature": 0,
+            "vision_enabled": False,
         },
-        "firebase": {"enabled": "false"},
-        "langsmith": {"enabled": "false"},
+        "firebase": {"enabled": False},
+        "langsmith": {"enabled": False},
         "proactive_messaging": {
-            "enabled": "false",
+            "enabled": False,
+            "temperature": 1,
         },
     }
 
@@ -73,22 +74,22 @@ class AppConfig(ABC):
     @property
     def vision_enabled(self) -> bool:
         """Determines if vision (image analysis) feature is enabled."""
-        return self.config.getboolean("settings", "vision_enabled", fallback=False)
+        return self.config.getboolean("settings", "vision_enabled", fallback=self.DEFAULT_CONFIG["settings"]["vision_enabled"])
 
     @property
     def langsmith_enabled(self) -> bool:
         """Determines if LangSmith feature is enabled."""
-        return self.config.getboolean("langsmith", "enabled", fallback=False)
+        return self.config.getboolean("langsmith", "enabled", fallback=self.DEFAULT_CONFIG["langsmith"]["enabled"])
 
     @property
     def langsmith_api_key(self) -> str:
         """Retrieves the LangSmith API key."""
-        return self.config.get("langsmith", "api_key", fallback="")
+        return self.config.get("langsmith", "api_key")
 
     @property
     def proactive_messaging_enabled(self) -> bool:
         """Determines if proactive messaging feature is enabled."""
-        return self.config.getboolean("proactive_messaging", "enabled", fallback=False)
+        return self.config.getboolean("proactive_messaging", "enabled", fallback=self.DEFAULT_CONFIG["proactive_messaging"]["enabled"])
 
     @property
     def proactive_message_interval_days(self) -> float:
@@ -104,6 +105,11 @@ class AppConfig(ABC):
     def proactive_slack_channel(self) -> str:
         """Returns the Slack channel ID where proactive messages will be posted."""
         return self.config.get("proactive_messaging", "slack_channel")
+
+    @property
+    def proactive_message_temperature(self) -> float:
+        """Retrieves the temperature setting for proactive messaging."""
+        return self.config.getfloat("proactive_messaging", "temperature", fallback=self.DEFAULT_CONFIG["proactive_messaging"]["temperature"])
 
     def _validate_config(self) -> None:
         """Validate that required configuration variables are present."""
@@ -128,7 +134,7 @@ class AppConfig(ABC):
             companion (firestore.DocumentSnapshot): Firestore document snapshot containing companion settings.
         """
         # Retrieve settings and use defaults if necessary
-        settings = {
+        settings: dict[str, dict[str, str]] = {
             "chat_model": (
                 safely_get_field(
                     companion,
@@ -147,14 +153,14 @@ class AppConfig(ABC):
                 safely_get_field(
                     companion,
                     "temperature",
-                    self.DEFAULT_CONFIG["settings"]["temperature"],
+                    str(self.DEFAULT_CONFIG["settings"]["temperature"]),
                 )
             ),
             "vision_enabled": (
                 safely_get_field(
                     companion,
                     "vision_enabled",
-                    self.DEFAULT_CONFIG["settings"]["vision_enabled"],
+                    str(self.DEFAULT_CONFIG["settings"]["vision_enabled"]),
                 )
             ),
         }
@@ -217,6 +223,31 @@ def init_chat_model(app_config: AppConfig) -> ChatOpenAI:
         temperature=float(config.get("settings", "temperature")),
         openai_api_key=config.get("api", "openai_api_key"),
         openai_organization=config.get("api", "openai_organization", fallback=None),
+        max_tokens=MAX_TOKENS,
+    )  # type: ignore
+    return chat
+
+def init_proactive_chat_model(app_config: AppConfig) -> ChatOpenAI:
+    """
+    Initializes a chat model specifically for proactive messaging.
+
+    This function creates a chat model instance using settings configured for
+    proactive messaging, including the temperature setting which influences the
+    creativity of the generated messages.
+
+    Args:
+        app_config (AppConfig): The configuration object containing settings
+                                     for proactive messaging.
+
+    Returns:
+        ChatOpenAI: An initialized chat model for proactive messaging.
+    """
+    proactive_temp = app_config.proactive_message_temperature
+    chat = ChatOpenAI(
+        model=app_config.config.get("settings", "chat_model"),
+        temperature=proactive_temp,
+        openai_api_key=app_config.config.get("api", "openai_api_key"),
+        openai_organization=app_config.config.get("api", "openai_organization", fallback=None),
         max_tokens=MAX_TOKENS,
     )  # type: ignore
     return chat
