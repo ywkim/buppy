@@ -10,7 +10,7 @@ import re
 from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from random import randint
+import random
 from datetime import datetime, timedelta
 import aiohttp
 import emoji_data_python
@@ -176,28 +176,23 @@ class SlackAppConfig(AppConfig):
 
         self._validate_config()
 
-async def schedule_proactive_messages(app: AsyncApp, app_config: SlackAppConfig):
-    if not app_config.proactive_messaging_enabled:
-        return
+async def schedule_proactive_messages(app: AsyncApp, app_config: SlackAppConfig, scheduler: AsyncIOScheduler):
+    interval = app_config.proactive_message_interval_days
+    next_schedule_time = datetime.now() + timedelta(days=interval)
 
-    def schedule_next_message():
-        interval = app_config.proactive_message_interval_days
-        next_schedule_time = datetime.now() + timedelta(days=interval * random.random())
-        scheduler.add_job(
-            send_proactive_message,
-            'date',
-            run_date=next_schedule_time,
-            args=[app, app_config.proactive_system_prompt, app_config.proactive_slack_channel]
-        )
+    scheduler.add_job(
+        send_proactive_message,
+        'date',
+        run_date=next_schedule_time,
+        args=[app, app_config, scheduler]
+    )
+async def send_proactive_message(app: AsyncApp, app_config: SlackAppConfig, scheduler: AsyncIOScheduler):
+    message = app_config.proactive_system_prompt
+    channel = app_config.proactive_slack_channel
+    await app.client.chat_postMessage(channel=channel, text=message)
 
-    schedule_next_message()  # Initial scheduling
-
-    # Reschedule after each message is sent
-    async def send_proactive_message(app: AsyncApp, message: str, channel: str):
-        await app.client.chat_postMessage(channel=channel, text=message)
-        schedule_next_message()  # Schedule the next message after sending one
-
-    scheduler.start()
+    # Reschedule the next proactive message
+    schedule_proactive_messages(app, app_config, scheduler)
 
 def extract_image_url(message: dict[str, Any]) -> str | None:
     """
@@ -538,8 +533,10 @@ async def main():
     logging.info("Registering event and command handlers")
     register_events_and_commands(app, app_config)
 
-    # Inside main function, after initializing AsyncApp and SocketModeHandler
-    await schedule_proactive_messages(app, app_config)
+    if app_config.proactive_messaging_enabled:
+        scheduler = AsyncIOScheduler()
+        await schedule_proactive_messages(app, app_config, scheduler)
+        scheduler.start()
 
     logging.info("Starting SocketModeHandler")
     await handler.start_async()

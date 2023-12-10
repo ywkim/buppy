@@ -13,6 +13,7 @@ emoji-data-python = "^1.5.0"
 google-cloud-firestore = "^2.13.1"
 aiohttp = "^3.8.6"
 streamlit = "^1.28.2"
+apscheduler = "^3.10.4"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
