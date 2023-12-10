@@ -73,10 +73,7 @@ def handle_chat_interaction(app_config: StreamlitAppConfig) -> None:
 
         try:
             # If Firebase is enabled, override the config with the one from Firebase
-            firebase_enabled = app_config.config.getboolean(
-                "firebase", "enabled", fallback=False
-            )
-            if firebase_enabled:
+            if app_config.firebase_enabled:
                 companion_id = st.session_state.companion_id
                 app_config.load_config_from_firebase(companion_id)
                 logging.info("Override configuration with Firebase settings")
@@ -169,10 +166,7 @@ def main():
     app_config = StreamlitAppConfig()
     app_config.load_config()
 
-    firebase_enabled = app_config.config.getboolean(
-        "firebase", "enabled", fallback=False
-    )
-    if firebase_enabled:
+    if app_config.firebase_enabled:
         companion_id = display_companion_id_input()
         if not companion_id:
             st.markdown("👈 상단 왼쪽 모서리에 있는 사이드바를 열어 Companion ID를 입력해 주세요.")

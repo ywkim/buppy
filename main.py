@@ -178,54 +178,63 @@ class SlackAppConfig(AppConfig):
         self._validate_config()
 
 
-async def schedule_next_proactive_message(app: AsyncApp, app_config: SlackAppConfig, scheduler: AsyncIOScheduler):
+class ProactiveMessagingContext:
+    """
+    Represents the context for proactive messaging.
+
+    Attributes:
+        app (AsyncApp): The Slack app instance.
+        app_config (SlackAppConfig): The application configuration.
+        scheduler (AsyncIOScheduler): The scheduler instance.
+        bot_user_id (str): The user ID of the bot.
+    """
+
+    def __init__(self, app: AsyncApp, app_config: SlackAppConfig, scheduler: AsyncIOScheduler, bot_user_id: str):
+        self.app = app
+        self.app_config = app_config
+        self.scheduler = scheduler
+        self.bot_user_id = bot_user_id
+
+async def schedule_next_proactive_message(context: ProactiveMessagingContext):
     """
     Schedules the next proactive message.
 
     This function calculates the next time to send a proactive message based on the
     interval setting and schedules the message accordingly.
-
-    Args:
-        app_config (SlackAppConfig): Configuration object containing settings.
-        scheduler (AsyncIOScheduler): Scheduler instance for scheduling messages.
     """
-    interval = app_config.proactive_message_interval_days
+    interval = context.app_config.proactive_message_interval_days
     next_schedule_time = datetime.now() + timedelta(days=interval)
 
-    scheduler.add_job(
+    context.scheduler.add_job(
         send_proactive_message,
         'date',
         run_date=next_schedule_time,
-        args=[app, app_config, scheduler]
+        args=[context]
     )
 
     logging.info(f"Next proactive message scheduled for: {next_schedule_time}")
 
-async def send_proactive_message(app: AsyncApp, app_config: SlackAppConfig, scheduler: AsyncIOScheduler):
+async def send_proactive_message(context: ProactiveMessagingContext):
     """
     Sends a proactive message to the specified Slack channel.
 
     This function generates a proactive message using the chat model based on the
     system prompt configured in the app settings. It then sends the generated message
     to the specified Slack channel and schedules the next proactive message.
-
-    Args:
-        app (AsyncApp): The Slack app instance used for sending messages.
-        app_config (SlackAppConfig): Configuration object containing settings.
-        scheduler (AsyncIOScheduler): Scheduler instance for scheduling messages.
-
-    Raises:
-        Exception: If there is an error in generating or sending the message.
     """
+    if context.app_config.firebase_enabled:
+        await app_config.load_config_from_firebase(context.bot_user_id)
+        logging.info("Configuration updated from Firebase Firestore.")
+
     # Initialize chat model and generate message
-    chat = init_proactive_chat_model(app_config)
-    system_prompt = SystemMessage(content=app_config.proactive_system_prompt)
+    chat = init_proactive_chat_model(context.app_config)
+    system_prompt = SystemMessage(content=context.app_config.proactive_system_prompt)
     resp = await chat.agenerate([[system_prompt]])
     message = resp.generations[0][0].text
 
     # Send the generated message to the specified Slack channel
-    channel = app_config.proactive_slack_channel
-    await app.client.chat_postMessage(channel=channel, text=message)
+    channel = context.app_config.proactive_slack_channel
+    await context.app.client.chat_postMessage(channel=channel, text=message)
 
     logging.info(            create_log_message(
                 "Proactive message sent to channel",
@@ -235,7 +244,7 @@ async def send_proactive_message(app: AsyncApp, app_config: SlackAppConfig, sche
 )
 
     # Schedule the next proactive message
-    await schedule_next_proactive_message(app, app_config, scheduler)
+    await schedule_next_proactive_message(context)
 
 def extract_image_url(message: dict[str, Any]) -> str | None:
     """
@@ -346,10 +355,7 @@ def register_events_and_commands(app: AsyncApp, app_config: SlackAppConfig) -> N
 
         try:
             # If Firebase is enabled, override the config with the one from Firebase
-            firebase_enabled = app_config.config.getboolean(
-                "firebase", "enabled", fallback=False
-            )
-            if firebase_enabled:
+            if app_config.firebase_enabled:
                 await app_config.load_config_from_firebase(bot_user_id)
                 logging.info("Override configuration with Firebase settings")
 
@@ -566,10 +572,7 @@ async def main():
     bot_user_id = bot_auth_info["user_id"]
     logging.info("Bot User ID is %s", bot_user_id)
 
-    firebase_enabled = app_config.config.getboolean(
-        "firebase", "enabled", fallback=False
-    )
-    if firebase_enabled:
+    if app_config.firebase_enabled:
         await app_config.load_config_from_firebase(bot_user_id)
         logging.info("Override configuration with Firebase settings")
 
@@ -578,7 +581,8 @@ async def main():
 
     if app_config.proactive_messaging_enabled:
         scheduler = AsyncIOScheduler()
-        await schedule_next_proactive_message(app, app_config, scheduler)
+        context = ProactiveMessagingContext(app, app_config, scheduler, bot_user_id)
+        await schedule_next_proactive_message(context)
         scheduler.start()
         logging.info("Proactive messaging has been scheduled.")
 

@@ -77,6 +77,11 @@ class AppConfig(ABC):
         return self.config.getboolean("settings", "vision_enabled", fallback=self.DEFAULT_CONFIG["settings"]["vision_enabled"])
 
     @property
+    def firebase_enabled(self) -> bool:
+        """Determines if Firebase integration is enabled."""
+        return self.config.getboolean("firebase", "enabled", fallback=self.DEFAULT_CONFIG["firebase"]["enabled"])
+
+    @property
     def langsmith_enabled(self) -> bool:
         """Determines if LangSmith feature is enabled."""
         return self.config.getboolean("langsmith", "enabled", fallback=self.DEFAULT_CONFIG["langsmith"]["enabled"])
