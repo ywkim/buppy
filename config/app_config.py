@@ -74,17 +74,25 @@ class AppConfig(ABC):
     @property
     def vision_enabled(self) -> bool:
         """Determines if vision (image analysis) feature is enabled."""
-        return self.config.getboolean("settings", "vision_enabled", fallback=self.DEFAULT_CONFIG["settings"]["vision_enabled"])
+        return self.config.getboolean(
+            "settings",
+            "vision_enabled",
+            fallback=self.DEFAULT_CONFIG["settings"]["vision_enabled"],
+        )
 
     @property
     def firebase_enabled(self) -> bool:
         """Determines if Firebase integration is enabled."""
-        return self.config.getboolean("firebase", "enabled", fallback=self.DEFAULT_CONFIG["firebase"]["enabled"])
+        return self.config.getboolean(
+            "firebase", "enabled", fallback=self.DEFAULT_CONFIG["firebase"]["enabled"]
+        )
 
     @property
     def langsmith_enabled(self) -> bool:
         """Determines if LangSmith feature is enabled."""
-        return self.config.getboolean("langsmith", "enabled", fallback=self.DEFAULT_CONFIG["langsmith"]["enabled"])
+        return self.config.getboolean(
+            "langsmith", "enabled", fallback=self.DEFAULT_CONFIG["langsmith"]["enabled"]
+        )
 
     @property
     def langsmith_api_key(self) -> str:
@@ -94,7 +102,11 @@ class AppConfig(ABC):
     @property
     def proactive_messaging_enabled(self) -> bool:
         """Determines if proactive messaging feature is enabled."""
-        return self.config.getboolean("proactive_messaging", "enabled", fallback=self.DEFAULT_CONFIG["proactive_messaging"]["enabled"])
+        return self.config.getboolean(
+            "proactive_messaging",
+            "enabled",
+            fallback=self.DEFAULT_CONFIG["proactive_messaging"]["enabled"],
+        )
 
     @property
     def proactive_message_interval_days(self) -> float:
@@ -114,7 +126,11 @@ class AppConfig(ABC):
     @property
     def proactive_message_temperature(self) -> float:
         """Retrieves the temperature setting for proactive messaging."""
-        return self.config.getfloat("proactive_messaging", "temperature", fallback=self.DEFAULT_CONFIG["proactive_messaging"]["temperature"])
+        return self.config.getfloat(
+            "proactive_messaging",
+            "temperature",
+            fallback=self.DEFAULT_CONFIG["proactive_messaging"]["temperature"],
+        )
 
     def _validate_config(self) -> None:
         """Validate that required configuration variables are present."""
@@ -131,7 +147,9 @@ class AppConfig(ABC):
         if self.langsmith_enabled:
             assert self.langsmith_api_key, "Missing configuration for LangSmith API key"
 
-    def _apply_settings_from_companion(self, companion: firestore.DocumentSnapshot) -> None:
+    def _apply_settings_from_companion(
+        self, companion: firestore.DocumentSnapshot
+    ) -> None:
         """
         Applies settings from the given companion Firestore document to the provided app configuration.
 
@@ -232,6 +250,7 @@ def init_chat_model(app_config: AppConfig) -> ChatOpenAI:
     )  # type: ignore
     return chat
 
+
 def init_proactive_chat_model(app_config: AppConfig) -> ChatOpenAI:
     """
     Initializes a chat model specifically for proactive messaging.
@@ -252,7 +271,9 @@ def init_proactive_chat_model(app_config: AppConfig) -> ChatOpenAI:
         model=app_config.config.get("settings", "chat_model"),
         temperature=proactive_temp,
         openai_api_key=app_config.config.get("api", "openai_api_key"),
-        openai_organization=app_config.config.get("api", "openai_organization", fallback=None),
+        openai_organization=app_config.config.get(
+            "api", "openai_organization", fallback=None
+        ),
         max_tokens=MAX_TOKENS,
     )  # type: ignore
     return chat

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import json
 import argparse
 import configparser
 import csv
+import json
 import os
 
 from google.cloud import firestore
@@ -97,9 +97,7 @@ def upload_bot_data(db: firestore.Client, bot_id: str, bot_data: dict):
 
 
 def upload_proactive_messaging_settings(
-    db: firestore.Client,
-    bot_id: str,
-    proactive_messaging_config: dict
+    db: firestore.Client, bot_id: str, proactive_messaging_config: dict
 ):
     """
     Uploads proactive messaging settings to Firestore for the specified bot.
@@ -115,6 +113,7 @@ def upload_proactive_messaging_settings(
     """
     bot_ref = db.collection("Bots").document(bot_id)
     bot_ref.set({"proactive_messaging": proactive_messaging_config}, merge=True)
+
 
 def document_exists(db: firestore.Client, collection: str, document_id: str) -> bool:
     """
@@ -199,19 +198,27 @@ def main():
         bot_data = {"CompanionId": companion_id}
 
         # Extract proactive messaging settings from INI file
-        proactive_enabled = config.getboolean("proactive_messaging", "enabled", fallback=None)
-        proactive_messaging_config = {
-            "enabled": proactive_enabled
-        }
+        proactive_enabled = config.getboolean(
+            "proactive_messaging", "enabled", fallback=None
+        )
+        proactive_messaging_config = {"enabled": proactive_enabled}
 
         if proactive_enabled:
-            proactive_messaging_config["interval_days"] = config.getfloat("proactive_messaging", "interval_days")
-            proactive_messaging_config["system_prompt"] = config.get("proactive_messaging", "system_prompt")
-            proactive_messaging_config["slack_channel"] = config.get("proactive_messaging", "slack_channel")
+            proactive_messaging_config["interval_days"] = config.getfloat(
+                "proactive_messaging", "interval_days"
+            )
+            proactive_messaging_config["system_prompt"] = config.get(
+                "proactive_messaging", "system_prompt"
+            )
+            proactive_messaging_config["slack_channel"] = config.get(
+                "proactive_messaging", "slack_channel"
+            )
 
             # Add temperature setting if present
             if config.has_option("proactive_messaging", "temperature"):
-                proactive_messaging_config["temperature"] = config.getfloat("proactive_messaging", "temperature")
+                proactive_messaging_config["temperature"] = config.getfloat(
+                    "proactive_messaging", "temperature"
+                )
 
             bot_data["proactive_messaging"] = proactive_messaging_config
 

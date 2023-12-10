@@ -6,15 +6,15 @@ import base64
 import json
 import logging
 import os
+import random
 import re
+from datetime import datetime, timedelta
 from typing import Any
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import random
-from datetime import datetime, timedelta
 import aiohttp
 import emoji_data_python
 from aiohttp import ClientError
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from google.cloud import firestore
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
@@ -22,7 +22,12 @@ from slack_bolt.async_app import AsyncApp
 from slack_bolt.context.say.async_say import AsyncSay
 from slack_sdk.web.async_client import AsyncWebClient
 
-from config.app_config import AppConfig, init_chat_model, safely_get_field, init_proactive_chat_model
+from config.app_config import (
+    AppConfig,
+    init_chat_model,
+    init_proactive_chat_model,
+    safely_get_field,
+)
 from utils.logging_utils import create_log_message
 from utils.message_utils import prepare_chat_messages
 
@@ -71,7 +76,8 @@ class SlackAppConfig(AppConfig):
                     "TEMPERATURE", str(self.DEFAULT_CONFIG["settings"]["temperature"])
                 ),
                 "vision_enabled": os.environ.get(
-                    "VISION_ENABLED", str(self.DEFAULT_CONFIG["settings"]["vision_enabled"])
+                    "VISION_ENABLED",
+                    str(self.DEFAULT_CONFIG["settings"]["vision_enabled"]),
                 ).lower()
                 in {"true", "1", "yes"},
             },
@@ -101,7 +107,9 @@ class SlackAppConfig(AppConfig):
         self.bot_token = self.config.get("api", "slack_bot_token")
         self.app_token = self.config.get("api", "slack_app_token")
 
-    def _apply_proactive_messaging_settings_from_bot(self, bot_document: firestore.DocumentSnapshot) -> None:
+    def _apply_proactive_messaging_settings_from_bot(
+        self, bot_document: firestore.DocumentSnapshot
+    ) -> None:
         """
         Applies proactive messaging settings from the provided bot document snapshot.
 
@@ -116,15 +124,21 @@ class SlackAppConfig(AppConfig):
                                                       document for the bot.
         """
         proactive_messaging_settings: dict[str, dict[str, str]] = {
-            "enabled": safely_get_field(bot_document, "proactive_messaging.enabled", str(self.DEFAULT_CONFIG["proactive_messaging"]["enabled"])),
+            "enabled": safely_get_field(
+                bot_document,
+                "proactive_messaging.enabled",
+                str(self.DEFAULT_CONFIG["proactive_messaging"]["enabled"]),
+            ),
             "interval_days": bot_document.get("proactive_messaging.interval_days"),
             "system_prompt": bot_document.get("proactive_messaging.system_prompt"),
             "slack_channel": bot_document.get("proactive_messaging.slack_channel"),
-            "temperature": bot_document.get("proactive_messaging.temperature", str(self.DEFAULT_CONFIG["proactive_messaging"]["temperature"])),
+            "temperature": bot_document.get(
+                "proactive_messaging.temperature",
+                str(self.DEFAULT_CONFIG["proactive_messaging"]["temperature"]),
+            ),
         }
 
         self.config.read_dict({"proactive_messaging": proactive_messaging_settings})
-
 
     async def load_config_from_firebase(self, bot_user_id: str) -> None:
         """
@@ -189,11 +203,18 @@ class ProactiveMessagingContext:
         bot_user_id (str): The user ID of the bot.
     """
 
-    def __init__(self, app: AsyncApp, app_config: SlackAppConfig, scheduler: AsyncIOScheduler, bot_user_id: str):
+    def __init__(
+        self,
+        app: AsyncApp,
+        app_config: SlackAppConfig,
+        scheduler: AsyncIOScheduler,
+        bot_user_id: str,
+    ):
         self.app = app
         self.app_config = app_config
         self.scheduler = scheduler
         self.bot_user_id = bot_user_id
+
 
 async def schedule_next_proactive_message(context: ProactiveMessagingContext):
     """
@@ -206,13 +227,11 @@ async def schedule_next_proactive_message(context: ProactiveMessagingContext):
     next_schedule_time = datetime.now() + timedelta(days=interval * random.random() * 2)
 
     context.scheduler.add_job(
-        send_proactive_message,
-        'date',
-        run_date=next_schedule_time,
-        args=[context]
+        send_proactive_message, "date", run_date=next_schedule_time, args=[context]
     )
 
     logging.info(f"Next proactive message scheduled for: {next_schedule_time}")
+
 
 async def send_proactive_message(context: ProactiveMessagingContext):
     """
@@ -236,15 +255,17 @@ async def send_proactive_message(context: ProactiveMessagingContext):
     channel = context.app_config.proactive_slack_channel
     await context.app.client.chat_postMessage(channel=channel, text=message)
 
-    logging.info(            create_log_message(
-                "Proactive message sent to channel",
-                channel=channel,
-                text=message,
-            )
-)
+    logging.info(
+        create_log_message(
+            "Proactive message sent to channel",
+            channel=channel,
+            text=message,
+        )
+    )
 
     # Schedule the next proactive message
     await schedule_next_proactive_message(context)
+
 
 def extract_image_url(message: dict[str, Any]) -> str | None:
     """
