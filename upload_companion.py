@@ -196,7 +196,7 @@ def main():
 
     # Upload bot data if Bot ID is provided
     if bot_id:
-        bot_data = {"CompanionId": companion_id}
+        bot_data: dict[str, Any] = {"CompanionId": companion_id}
 
         # Extract proactive messaging settings from INI file
         proactive_enabled = config.getboolean(
