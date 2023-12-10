@@ -69,12 +69,18 @@ Buppy는 사용자의 직접적인 요청이나 명령 없이도 자체적으로
 
 ```ini
 [proactive_messaging]
-enabled = true  # Proactive Messaging 기능 활성화 여부
-interval_days = 2.5  # 메시지를 보내는 평균 일수 간격
-system_prompt = Your proactive message prompt  # 메시지 생성을 위한 시스템 프롬프트
-slack_channel = YOUR_SLACK_CHANNEL_ID  # 메시지를 보낼 Slack 채널 ID
-temperature = 1  # 메시지 생성의 다양성과 창의성을 결정하는 온도 값
+enabled = true
+interval_days = 2.5
+system_prompt = Your proactive message prompt
+slack_channel = YOUR_SLACK_CHANNEL_ID
+temperature = 1
 ```
+
+- `enabled`: Proactive Messaging 기능 활성화 여부
+- `interval_days`: 메시지를 보내는 평균 일수 간격. 예를 들어, 2.5로 설정하면 평균적으로 2.5일마다 메시지가 발송됩니다.
+- `system_prompt`: 메시지 생성을 위한 시스템 프롬프트
+- `slack_channel`: 메시지를 보낼 Slack 채널 ID
+- `temperature`: 메시지 생성의 다양성과 창의성을 결정하는 온도 값
 
 이 설정을 완료하면 Buppy는 지정된 빈도와 시스템 프롬프트를 사용하여 자동으로 메시지를 생성하고 지정된 Slack 채널에 메시지를 보냅니다.
 
