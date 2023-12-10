@@ -71,8 +71,8 @@ Buppy는 사용자의 직접적인 요청이나 명령 없이도 자체적으로
 [proactive_messaging]
 enabled = true  # Proactive Messaging 기능 활성화 여부
 interval_days = 2.5  # 메시지를 보내는 평균 일수 간격
-system_prompt = "Your proactive message prompt"  # 메시지 생성을 위한 시스템 프롬프트
-slack_channel = "YOUR_SLACK_CHANNEL_ID"  # 메시지를 보낼 Slack 채널 ID
+system_prompt = Your proactive message prompt  # 메시지 생성을 위한 시스템 프롬프트
+slack_channel = YOUR_SLACK_CHANNEL_ID  # 메시지를 보낼 Slack 채널 ID
 temperature = 1  # 메시지 생성의 다양성과 창의성을 결정하는 온도 값
 ```
 
