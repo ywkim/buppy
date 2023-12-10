@@ -160,7 +160,7 @@ class SlackAppConfig(AppConfig):
                 f"Bot with ID {bot_user_id} does not exist in Firebase."
             )
 
-        self._apply_proactive_messaging_settings_from_bot(bot_document)
+        self._apply_proactive_messaging_settings_from_bot(bot)
 
         companion_id = bot.get("CompanionId")
         companion_ref = db.collection("Companions").document(companion_id)
@@ -230,7 +230,7 @@ async def schedule_next_proactive_message(context: ProactiveMessagingContext):
         send_proactive_message, "date", run_date=next_schedule_time, args=[context]
     )
 
-    logging.info(f"Next proactive message scheduled for: {next_schedule_time}")
+    logging.info("Next proactive message scheduled for: %s", next_schedule_time)
 
 
 async def send_proactive_message(context: ProactiveMessagingContext):
@@ -242,7 +242,7 @@ async def send_proactive_message(context: ProactiveMessagingContext):
     to the specified Slack channel and schedules the next proactive message.
     """
     if context.app_config.firebase_enabled:
-        await app_config.load_config_from_firebase(context.bot_user_id)
+        await context.app_config.load_config_from_firebase(context.bot_user_id)
         logging.info("Configuration updated from Firebase Firestore.")
 
     # Initialize chat model and generate message
