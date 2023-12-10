@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import argparse
 import configparser
 import csv
@@ -95,6 +96,26 @@ def upload_bot_data(db: firestore.Client, bot_id: str, bot_data: dict):
     bots_ref.document(bot_id).set(bot_data)
 
 
+def upload_proactive_messaging_settings(
+    db: firestore.Client,
+    bot_id: str,
+    proactive_messaging_config: dict
+):
+    """
+    Uploads proactive messaging settings to Firestore for the specified bot.
+
+    Args:
+        db (firestore.Client): Firestore client instance.
+        bot_id (str): The ID of the bot to which the settings will be uploaded.
+        proactive_messaging_config (dict): The proactive messaging configuration.
+
+    This function uploads the provided proactive messaging settings to the Firestore
+    document corresponding to the given bot ID. It ensures that the bot's behavior
+    in sending proactive messages is configured according to these settings.
+    """
+    bot_ref = db.collection("Bots").document(bot_id)
+    bot_ref.set({"proactive_messaging": proactive_messaging_config}, merge=True)
+
 def document_exists(db: firestore.Client, collection: str, document_id: str) -> bool:
     """
     Check if a document exists in the specified Firestore collection.
@@ -176,11 +197,29 @@ def main():
     # Upload bot data if Bot ID is provided
     if bot_id:
         bot_data = {"CompanionId": companion_id}
+
+        # Extract proactive messaging settings from INI file
+        proactive_enabled = config.getboolean("proactive_messaging", "enabled", fallback=None)
+        proactive_messaging_config = {
+            "enabled": proactive_enabled
+        }
+
+        if proactive_enabled:
+            proactive_messaging_config["interval_days"] = config.getfloat("proactive_messaging", "interval_days")
+            proactive_messaging_config["system_prompt"] = config.get("proactive_messaging", "system_prompt")
+            proactive_messaging_config["slack_channel"] = config.get("proactive_messaging", "slack_channel")
+
+            # Add temperature setting if present
+            if config.has_option("proactive_messaging", "temperature"):
+                proactive_messaging_config["temperature"] = config.getfloat("proactive_messaging", "temperature")
+
+            bot_data["proactive_messaging"] = proactive_messaging_config
+
         upload_bot_data(db, bot_id, bot_data)
+
         if document_exists(db, "Bots", bot_id):
             print(f"Bot data for '{bot_id}' uploaded successfully.")
-            for key, value in bot_data.items():
-                print(f"  - {key}: {value}")
+            print(json.dumps(bot_data, indent=4, ensure_ascii=False))
         else:
             print(f"Failed to upload bot data for '{bot_id}'.")
 

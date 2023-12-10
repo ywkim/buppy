@@ -203,7 +203,7 @@ async def schedule_next_proactive_message(context: ProactiveMessagingContext):
     interval setting and schedules the message accordingly.
     """
     interval = context.app_config.proactive_message_interval_days
-    next_schedule_time = datetime.now() + timedelta(days=interval)
+    next_schedule_time = datetime.now() + timedelta(days=interval * random.random() * 2)
 
     context.scheduler.add_job(
         send_proactive_message,
