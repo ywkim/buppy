@@ -59,7 +59,7 @@ class SlackAppConfig(AppConfig):
 
     def load_config_from_env_vars(self) -> None:
         """Load configuration from environment variables."""
-        env_config: dict[str, dict[str, str]] = {
+        env_config: dict[str, dict[str, Any]] = {
             "api": {
                 "openai_api_key": os.environ.get("OPENAI_API_KEY"),
                 "slack_bot_token": os.environ.get("SLACK_BOT_TOKEN"),
@@ -123,22 +123,23 @@ class SlackAppConfig(AppConfig):
             bot_document (firestore.DocumentSnapshot): A snapshot of the Firestore
                                                       document for the bot.
         """
-        proactive_messaging_settings: dict[str, dict[str, str]] = {
-            "enabled": safely_get_field(
-                bot_document,
-                "proactive_messaging.enabled",
-                str(self.DEFAULT_CONFIG["proactive_messaging"]["enabled"]),
-            ),
-            "interval_days": bot_document.get("proactive_messaging.interval_days"),
-            "system_prompt": bot_document.get("proactive_messaging.system_prompt"),
-            "slack_channel": bot_document.get("proactive_messaging.slack_channel"),
-            "temperature": bot_document.get(
-                "proactive_messaging.temperature",
-                str(self.DEFAULT_CONFIG["proactive_messaging"]["temperature"]),
-            ),
-        }
-
-        self.config.read_dict({"proactive_messaging": proactive_messaging_settings})
+        if safely_get_field(
+            bot_document,
+            "proactive_messaging.enabled",
+            self.DEFAULT_CONFIG["proactive_messaging"]["enabled"],
+        ):
+            proactive_messaging_settings: dict[str, Any] = {
+                "enabled": True,
+                "interval_days": bot_document.get("proactive_messaging.interval_days"),
+                "system_prompt": bot_document.get("proactive_messaging.system_prompt"),
+                "slack_channel": bot_document.get("proactive_messaging.slack_channel"),
+                "temperature": safely_get_field(
+                    bot_document,
+                    "proactive_messaging.temperature",
+                    self.DEFAULT_CONFIG["proactive_messaging"]["temperature"],
+                ),
+            }
+            self.config.read_dict({"proactive_messaging": proactive_messaging_settings})
 
     async def load_config_from_firebase(self, bot_user_id: str) -> None:
         """

@@ -51,7 +51,7 @@ class AppConfig(ABC):
         config (ConfigParser): A ConfigParser object holding the configuration.
     """
 
-    DEFAULT_CONFIG = {
+    DEFAULT_CONFIG: dict[str, dict[str, Any]] = {
         "settings": {
             "chat_model": "gpt-4",
             "system_prompt": "You are a helpful assistant.",
@@ -157,7 +157,7 @@ class AppConfig(ABC):
             companion (firestore.DocumentSnapshot): Firestore document snapshot containing companion settings.
         """
         # Retrieve settings and use defaults if necessary
-        settings: dict[str, dict[str, str]] = {
+        settings: dict[str, Any] = {
             "chat_model": (
                 safely_get_field(
                     companion,
@@ -176,14 +176,14 @@ class AppConfig(ABC):
                 safely_get_field(
                     companion,
                     "temperature",
-                    str(self.DEFAULT_CONFIG["settings"]["temperature"]),
+                    self.DEFAULT_CONFIG["settings"]["temperature"],
                 )
             ),
             "vision_enabled": (
                 safely_get_field(
                     companion,
                     "vision_enabled",
-                    str(self.DEFAULT_CONFIG["settings"]["vision_enabled"]),
+                    self.DEFAULT_CONFIG["settings"]["vision_enabled"],
                 )
             ),
         }
