@@ -578,8 +578,10 @@ async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config_file",
-        help=("Path to the configuration file. If no path is provided, will try to "
-              "load from `config.ini` and environmental variables."),
+        help=(
+            "Path to the configuration file. If no path is provided, will try to "
+            "load from `config.ini` and environmental variables."
+        ),
     )
     args = parser.parse_args()
 
