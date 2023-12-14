@@ -635,7 +635,9 @@ async def main():
     if app_config.firebase_enabled:
         # Check if Bot User IDs match
         if bot_user_id_from_config != bot_user_id:
-            raise ValueError("Mismatch between Bot User ID from Slack API and Firebase configuration.")
+            raise ValueError(
+                "Mismatch between Bot User ID from Slack API and Firebase configuration."
+            )
 
     logging.info("Registering event and command handlers")
     register_events_and_commands(app, app_config)
