@@ -178,6 +178,9 @@ def main():
         value=existing_data.get("temperature", 1.0),
     )
 
+    vision_enabled = existing_data.get("vision_enabled", False)
+    st.text(f"Vision Enabled: {'Yes' if vision_enabled else 'No'}")
+
     # Text area for editing or adding prefix messages
     prefix_messages_str = st.text_area(
         "Edit Prefix Messages (CSV format: Role,Content)",
@@ -197,7 +200,7 @@ def main():
             "chat_model": chat_model,
             "system_prompt": system_prompt,
             "temperature": temperature,
-            "vision_enabled": False,
+            "vision_enabled": vision_enabled,
             "prefix_messages_content": edited_prefix_messages,
         }
         admin_app.upload_companion_data(companion_id_to_upload, companion_data)
