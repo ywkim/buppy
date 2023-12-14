@@ -578,7 +578,8 @@ async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config_file",
-        help="Path to the configuration file. If no path is provided, will try to load from `config.ini` and environmental variables.",
+        help=("Path to the configuration file. If no path is provided, will try to "
+              "load from `config.ini` and environmental variables."),
     )
     args = parser.parse_args()
 
@@ -601,7 +602,7 @@ async def main():
     logging.info("Registering event and command handlers")
     register_events_and_commands(app, app_config)
 
-    if app_config.proactive_messaging_enabled:
+    if app_config.proactive_messaging_enabled and not app_config.firebase_enabled:
         scheduler = AsyncIOScheduler()
         context = ProactiveMessagingContext(app, app_config, scheduler, bot_user_id)
         await schedule_next_proactive_message(context)
