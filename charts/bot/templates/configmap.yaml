@@ -6,5 +6,4 @@ data:
   {{- toYaml .Values.env | nindent 2 }}
   OPENAI_API_KEY: {{ .Values.openaiApiKey | quote }}
   OPENAI_ORGANIZATION: {{ .Values.openaiOrganization | quote }}
-  SLACK_BOT_TOKEN: {{ .Values.slackBotToken | quote }}
-  SLACK_APP_TOKEN: {{ .Values.slackAppToken | quote }}
+  SLACK_BOT_USER_ID: {{ .Values.slackBotUserId | quote }}

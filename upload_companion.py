@@ -196,7 +196,11 @@ def main():
 
     # Upload bot data if Bot ID is provided
     if bot_id:
-        bot_data: dict[str, Any] = {"CompanionId": companion_id}
+        bot_data: dict[str, Any] = {
+            "CompanionId": companion_id,
+            "slack_bot_token": config["api"]["slack_bot_token"],
+            "slack_app_token": config["api"]["slack_app_token"],
+        }
 
         # Extract proactive messaging settings from INI file
         proactive_enabled = config.getboolean(

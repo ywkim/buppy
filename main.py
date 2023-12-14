@@ -59,11 +59,13 @@ class SlackAppConfig(AppConfig):
 
     def load_config_from_env_vars(self) -> None:
         """Load configuration from environment variables."""
+        firebase_enabled = os.environ.get(
+            "FIREBASE_ENABLED", str(self.DEFAULT_CONFIG["firebase"]["enabled"])
+        ).lower() in {"true", "1", "yes"}
+
         env_config: dict[str, dict[str, Any]] = {
             "api": {
                 "openai_api_key": os.environ.get("OPENAI_API_KEY"),
-                "slack_bot_token": os.environ.get("SLACK_BOT_TOKEN"),
-                "slack_app_token": os.environ.get("SLACK_APP_TOKEN"),
             },
             "settings": {
                 "chat_model": os.environ.get(
@@ -81,17 +83,18 @@ class SlackAppConfig(AppConfig):
                 ).lower()
                 in {"true", "1", "yes"},
             },
-            "firebase": {
-                "enabled": os.environ.get(
-                    "FIREBASE_ENABLED", str(self.DEFAULT_CONFIG["firebase"]["enabled"])
-                ).lower()
-                in {"true", "1", "yes"}
-            },
+            "firebase": {"enabled": firebase_enabled},
         }
 
         openai_org = os.environ.get("OPENAI_ORGANIZATION", None)
         if openai_org is not None:
             env_config["api"]["openai_organization"] = openai_org
+
+        if firebase_enabled:
+            env_config["api"]["slack_bot_user_id"] = os.environ.get("SLACK_BOT_USER_ID")
+        else:
+            env_config["api"]["slack_bot_token"] = os.environ.get("SLACK_BOT_TOKEN")
+            env_config["api"]["slack_app_token"] = os.environ.get("SLACK_APP_TOKEN")
 
         self.config.read_dict(env_config)
         logging.info("Configuration loaded from environment variables")
@@ -100,12 +103,16 @@ class SlackAppConfig(AppConfig):
         """Validate that required configuration variables are present."""
         super()._validate_config()
 
-        required_settings = ["slack_bot_token", "slack_app_token"]
-        for setting in required_settings:
-            assert setting in self.config["api"], f"Missing configuration for {setting}"
-
-        self.bot_token = self.config.get("api", "slack_bot_token")
-        self.app_token = self.config.get("api", "slack_app_token")
+        if self.config["firebase"]["enabled"]:
+            if not self.config["api"].get("slack_bot_user_id"):
+                raise ValueError("Missing configuration for slack_bot_user_id")
+        else:
+            if not self.config["api"].get("slack_bot_token"):
+                raise ValueError("Missing configuration for slack_bot_token")
+            if not self.config["api"].get("slack_app_token"):
+                raise ValueError("Missing configuration for slack_app_token")
+            self.bot_token = self.config.get("api", "slack_bot_token")
+            self.app_token = self.config.get("api", "slack_app_token")
 
     def _apply_proactive_messaging_settings_from_bot(
         self, bot_document: firestore.DocumentSnapshot
@@ -141,6 +148,27 @@ class SlackAppConfig(AppConfig):
             }
             self.config.read_dict({"proactive_messaging": proactive_messaging_settings})
 
+    def _apply_slack_tokens_from_bot(
+        self, bot_document: firestore.DocumentSnapshot
+    ) -> None:
+        """
+        Applies the Slack bot and app tokens from the provided bot document snapshot.
+
+        Args:
+            bot_document (firestore.DocumentSnapshot): A snapshot of the Firestore document for the bot.
+        """
+        slack_bot_token = bot_document.get("slack_bot_token")
+        slack_app_token = bot_document.get("slack_app_token")
+
+        # Update configuration with fetched tokens
+        token_config = {
+            "api": {
+                "slack_bot_token": slack_bot_token,
+                "slack_app_token": slack_app_token,
+            }
+        }
+        self.config.read_dict(token_config)
+
     async def load_config_from_firebase(self, bot_user_id: str) -> None:
         """
         Load configuration from Firebase Firestore. Uses default values from self.DEFAULT_CONFIG
@@ -162,6 +190,10 @@ class SlackAppConfig(AppConfig):
             )
 
         self._apply_proactive_messaging_settings_from_bot(bot)
+        self._apply_slack_tokens_from_bot(bot)
+
+        self.bot_token = self.config.get("api", "slack_bot_token")
+        self.app_token = self.config.get("api", "slack_app_token")
 
         companion_id = bot.get("CompanionId")
         companion_ref = db.collection("Companions").document(companion_id)
@@ -585,18 +617,25 @@ async def main():
     app_config = SlackAppConfig()
     app_config.load_config(args.config_file)
 
+    # Load Firebase configuration if enabled
+    if app_config.firebase_enabled:
+        bot_user_id_from_config = app_config.config.get("api", "slack_bot_user_id")
+        await app_config.load_config_from_firebase(bot_user_id_from_config)
+        logging.info("Override configuration with Firebase settings")
+
     logging.info("Initializing AsyncApp and SocketModeHandler")
     app = AsyncApp(token=app_config.bot_token)
     handler = AsyncSocketModeHandler(app, app_config.app_token)
 
-    # Fetch bot's user id
+    # Fetch bot's user id from Slack API
     bot_auth_info = await app.client.auth_test()
     bot_user_id = bot_auth_info["user_id"]
-    logging.info("Bot User ID is %s", bot_user_id)
+    logging.info("Bot User ID from Slack API is %s", bot_user_id)
 
     if app_config.firebase_enabled:
-        await app_config.load_config_from_firebase(bot_user_id)
-        logging.info("Override configuration with Firebase settings")
+        # Check if Bot User IDs match
+        if bot_user_id_from_config != bot_user_id:
+            raise ValueError("Mismatch between Bot User ID from Slack API and Firebase configuration.")
 
     logging.info("Registering event and command handlers")
     register_events_and_commands(app, app_config)
