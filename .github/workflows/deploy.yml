@@ -70,7 +70,7 @@ jobs:
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
           --set openaiOrganization=$OPENAI_ORGANIZATION \
-          --set slackBotUserId=U05UF7ZJ9SS \
+          --set slackBotUserId=U05UF7ZJ9SS
         kubectl get services -o wide
 
     - name: Deploy bot ID U060YNQLWAJ
@@ -85,5 +85,5 @@ jobs:
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
           --set openaiOrganization=$OPENAI_ORGANIZATION \
-          --set slackBotUserId=U060YNQLWAJ \
+          --set slackBotUserId=U060YNQLWAJ
         kubectl get services -o wide
