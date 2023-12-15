@@ -23,7 +23,10 @@ db = firestore.Client()
 
 @firestore.transactional
 def update_proactive_messaging_settings(
-    transaction: Transaction, bot_ref: firestore.DocumentReference
+    transaction: Transaction,
+    bot_ref: firestore.DocumentReference,
+    proactive_config,
+    bot_id,
 ):
     bot_doc = bot_ref.get(transaction=transaction).to_dict()
     current_task_id = bot_doc.get("current_task_id", None)
@@ -58,16 +61,17 @@ def handle_proactive_event():
     bot_id = data["id"]
 
     bot_ref = db.collection("Bots").document(bot_id)
+    bot_doc = bot_ref.get().to_dict()
 
     if "proactive_messaging" in bot_doc:
         proactive_config = bot_doc["proactive_messaging"]
-
-        # 변경 여부 확인
         if should_reschedule(
             data["oldValue"]["fields"]["proactive_messaging"], proactive_config
         ):
             transaction = db.transaction()
-            update_proactive_messaging_settings(transaction, bot_ref)
+            update_proactive_messaging_settings(
+                transaction, bot_ref, proactive_config, bot_id
+            )
 
     return "OK", 200
 
