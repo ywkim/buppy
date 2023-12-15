@@ -77,22 +77,17 @@ class AppConfig(ABC):
         return self.config.getboolean(
             "settings",
             "vision_enabled",
-            fallback=self.DEFAULT_CONFIG["settings"]["vision_enabled"],
         )
 
     @property
     def firebase_enabled(self) -> bool:
         """Determines if Firebase integration is enabled."""
-        return self.config.getboolean(
-            "firebase", "enabled", fallback=self.DEFAULT_CONFIG["firebase"]["enabled"]
-        )
+        return self.config.getboolean("firebase", "enabled")
 
     @property
     def langsmith_enabled(self) -> bool:
         """Determines if LangSmith feature is enabled."""
-        return self.config.getboolean(
-            "langsmith", "enabled", fallback=self.DEFAULT_CONFIG["langsmith"]["enabled"]
-        )
+        return self.config.getboolean("langsmith", "enabled")
 
     @property
     def langsmith_api_key(self) -> str:
@@ -115,7 +110,6 @@ class AppConfig(ABC):
         return self.config.getboolean(
             "proactive_messaging",
             "enabled",
-            fallback=self.DEFAULT_CONFIG["proactive_messaging"]["enabled"],
         )
 
     @property
@@ -139,7 +133,6 @@ class AppConfig(ABC):
         return self.config.getfloat(
             "proactive_messaging",
             "temperature",
-            fallback=self.DEFAULT_CONFIG["proactive_messaging"]["temperature"],
         )
 
     def _validate_config(self) -> None:
