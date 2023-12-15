@@ -71,7 +71,7 @@ class SlackAppConfig(AppConfig):
         """Validate that required configuration variables are present."""
         super()._validate_config()
 
-        if self.config["firebase"]["enabled"]:
+        if self.firebase_enabled:
             if not self.config["api"].get("slack_bot_user_id"):
                 raise ValueError("Missing configuration for slack_bot_user_id")
         else:
