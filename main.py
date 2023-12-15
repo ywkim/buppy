@@ -30,6 +30,7 @@ from config.app_config import (
 )
 from utils.logging_utils import create_log_message
 from utils.message_utils import prepare_chat_messages
+from utils.proactive_messaging_utils import ProactiveMessagingContext, generate_and_send_proactive_message, calculate_next_schedule_time
 
 ERROR_EMOJI = "bangbang"
 EXCLUDED_EMOJIS = ["eyes", ERROR_EMOJI]
@@ -225,48 +226,18 @@ class SlackAppConfig(AppConfig):
         self._validate_config()
 
 
-class ProactiveMessagingContext:
-    """
-    Represents the context for proactive messaging.
-
-    Attributes:
-        app (AsyncApp): The Slack app instance.
-        app_config (SlackAppConfig): The application configuration.
-        scheduler (AsyncIOScheduler): The scheduler instance.
-        bot_user_id (str): The user ID of the bot.
-    """
-
-    def __init__(
-        self,
-        app: AsyncApp,
-        app_config: SlackAppConfig,
-        scheduler: AsyncIOScheduler,
-        bot_user_id: str,
-    ):
-        self.app = app
-        self.app_config = app_config
-        self.scheduler = scheduler
-        self.bot_user_id = bot_user_id
-
-
-async def schedule_next_proactive_message(context: ProactiveMessagingContext):
+async def schedule_next_proactive_message(context: ProactiveMessagingContext, scheduler: AsyncIOScheduler):
     """
     Schedules the next proactive message.
 
     This function calculates the next time to send a proactive message based on the
     interval setting and schedules the message accordingly.
     """
-    interval = context.app_config.proactive_message_interval_days
-    next_schedule_time = datetime.now() + timedelta(days=interval * random.random() * 2)
-
-    context.scheduler.add_job(
-        send_proactive_message, "date", run_date=next_schedule_time, args=[context]
-    )
-
+    next_schedule_time = calculate_next_schedule_time(context.app_config.proactive_messaging_settings)
+    scheduler.add_job(send_proactive_message, 'date', run_date=next_schedule_time, args=[context, scheduler])
     logging.info("Next proactive message scheduled for: %s", next_schedule_time)
 
-
-async def send_proactive_message(context: ProactiveMessagingContext):
+async def send_proactive_message(context: ProactiveMessagingContext, scheduler: AsyncIOScheduler):
     """
     Sends a proactive message to the specified Slack channel.
 
@@ -278,26 +249,18 @@ async def send_proactive_message(context: ProactiveMessagingContext):
         await context.app_config.load_config_from_firebase(context.bot_user_id)
         logging.info("Configuration updated from Firebase Firestore.")
 
-    # Initialize chat model and generate message
-    chat = init_proactive_chat_model(context.app_config)
-    system_prompt = SystemMessage(content=context.app_config.proactive_system_prompt)
-    resp = await chat.agenerate([[system_prompt]])
-    message = resp.generations[0][0].text
+    await generate_and_send_proactive_message(context)
 
-    # Send the generated message to the specified Slack channel
     channel = context.app_config.proactive_slack_channel
-    await context.app.client.chat_postMessage(channel=channel, text=message)
-
     logging.info(
         create_log_message(
             "Proactive message sent to channel",
             channel=channel,
-            text=message,
         )
     )
 
     # Schedule the next proactive message
-    await schedule_next_proactive_message(context)
+    await schedule_next_proactive_message(context, scheduler)
 
 
 def extract_image_url(message: dict[str, Any]) -> str | None:
@@ -647,8 +610,8 @@ async def main():
 
     if app_config.proactive_messaging_enabled and not app_config.firebase_enabled:
         scheduler = AsyncIOScheduler()
-        context = ProactiveMessagingContext(app, app_config, scheduler, bot_user_id)
-        await schedule_next_proactive_message(context)
+        context = ProactiveMessagingContext(app, app_config, bot_user_id)
+        await schedule_next_proactive_message(context, scheduler)
         scheduler.start()
         logging.info("Proactive messaging has been scheduled.")
 

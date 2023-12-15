@@ -100,6 +100,10 @@ class AppConfig(ABC):
         return self.config.get("langsmith", "api_key")
 
     @property
+    def proactive_messaging_settings(self) -> dict[str, Any]:
+        return self.config.get("proactive_messaging", self.DEFAULT_CONFIG["proactive_messaging"])
+
+    @property
     def proactive_messaging_enabled(self) -> bool:
         """Determines if proactive messaging feature is enabled."""
         return self.config.getboolean(
