@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import unittest
 from datetime import datetime, timedelta
+from typing import Any
 from unittest.mock import MagicMock
 
 from utils.proactive_messaging_utils import (
@@ -19,7 +22,7 @@ class TestProactiveMessaging(unittest.TestCase):
     def setUp(self) -> None:
         """Set up test environment for each test."""
         self.bot_id = "test_bot_id"
-        self.proactive_config = {
+        self.proactive_config: dict[str, Any] = {
             "system_prompt": "Test prompt",
             "slack_channel": "test_channel",
             "interval_days": 1.0,
