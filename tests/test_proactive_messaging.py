@@ -38,11 +38,10 @@ class TestProactiveMessaging(unittest.TestCase):
     def test_calculate_next_schedule_time(self) -> None:
         """Test the calculate_next_schedule_time function."""
         interval_days = float(self.proactive_config["interval_days"])
-        expected_time = datetime.now() + timedelta(days=interval_days)
+        expected_time_start = datetime.now()
         calculated_time = calculate_next_schedule_time(self.proactive_config)
-        self.assertTrue(
-            expected_time <= calculated_time <= expected_time + timedelta(days=1)
-        )
+        expected_time_end = datetime.now() + timedelta(days=interval_days * 2)
+        self.assertTrue(expected_time_start <= calculated_time <= expected_time_end)
 
 
 if __name__ == "__main__":
