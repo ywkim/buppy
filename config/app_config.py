@@ -13,6 +13,16 @@ from firebase_settings import FirebaseSettings
 from proactive_messaging_settings import ProactiveMessagingSettings
 from env_loader import load_settings_from_env
 
+from config.settings.core_settings import CoreSettings
+from config.settings.firebase_settings import FirebaseSettings
+from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
+from config.settings.langsmith_settings import LangSmithSettings
+from config.loaders.env_loader import load_settings_from_env
+from config.loaders.file_loader import load_settings_from_file
+
+from abc import ABC, abstractmethod
+from google.cloud import firestore
+
 MAX_TOKENS = 1023
 
 
@@ -55,26 +65,16 @@ class AppConfig(ABC):
         config (ConfigParser): A ConfigParser object holding the configuration.
     """
 
-    DEFAULT_CONFIG: dict[str, dict[str, Any]] = {
-        "settings": {
-            "chat_model": "gpt-4",
-            "system_prompt": "You are a helpful assistant.",
-            "temperature": 0,
-            "vision_enabled": False,
-        },
-        "firebase": {"enabled": False},
-        "langsmith": {"enabled": False},
-        "proactive_messaging": {
-            "enabled": False,
-            "temperature": 1,
-        },
-    }
+    core_settings: CoreSettings
+    firebase_settings: FirebaseSettings
+    proactive_messaging_settings: ProactiveMessagingSettings
+    langsmith_settings: LangSmithSettings
 
     def __init__(self):
         self.core_settings = CoreSettings()
         self.firebase_settings = FirebaseSettings()
         self.proactive_messaging_settings = ProactiveMessagingSettings()
-        # ... 다른 설정들 초기화 ...
+        self.langsmith_settings = LangSmithSettings()
 
     def load_all_settings(self):
         self.core_settings = load_settings_from_env(CoreSettings)
