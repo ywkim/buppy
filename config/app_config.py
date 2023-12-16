@@ -8,6 +8,10 @@ from typing import Any
 
 from google.cloud import firestore
 from langchain.chat_models import ChatOpenAI
+from core_settings import CoreSettings
+from firebase_settings import FirebaseSettings
+from proactive_messaging_settings import ProactiveMessagingSettings
+from env_loader import load_settings_from_env
 
 MAX_TOKENS = 1023
 
@@ -67,9 +71,14 @@ class AppConfig(ABC):
     }
 
     def __init__(self):
-        self.general_settings = load_settings_from_env(GeneralSettings)
-        self.firebase_settings = load_settings_from_env(FirebaseSettings)
-        self.proactive_messaging_settings = load_settings_from_env(ProactiveMessagingSettings)
+        self.core_settings = CoreSettings()
+        self.firebase_settings = FirebaseSettings()
+        self.proactive_messaging_settings = ProactiveMessagingSettings()
+        # ... 다른 설정들 초기화 ...
+
+    def load_all_settings(self):
+        self.core_settings = load_settings_from_env(CoreSettings)
+        # ... 다른 설정들 로드 ...
 
     @property
     def vision_enabled(self) -> bool:

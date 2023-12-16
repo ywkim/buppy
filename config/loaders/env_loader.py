@@ -1,13 +1,11 @@
 import os
-import json
-from typing import Type
-from pydantic import parse_obj_as
+from typing import Type, TypeVar
+from pydantic import BaseModel
 
-def load_settings_from_env():
-    general_settings = GeneralSettings()
-    firebase_settings = FirebaseSettings()
-    proactive_messaging_settings = ProactiveMessagingSettings()
-    return general_settings, firebase_settings, proactive_messaging_settings
+T = TypeVar('T', bound=BaseModel)
+
+def load_settings_from_env(model: Type[T]) -> T:
+    return model(**os.environ)
 
 def load_settings_from_file(file_path: str, model: Type[BaseModel]) -> BaseModel:
     with open(file_path, 'r') as file:
