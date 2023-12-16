@@ -9,6 +9,7 @@ class ProactiveMessagingSettings(BaseModel):
     interval_days: Optional[float] = None
     system_prompt: Optional[str] = None
     slack_channel: Optional[str] = None
+    temperature: float = 1.0
 
     @root_validator(skip_on_failure=True)
     def check_required_fields(cls, values):  # pylint: disable=no-self-argument

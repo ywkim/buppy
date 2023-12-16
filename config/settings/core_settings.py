@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic_settings import BaseSettings
 
-class CoreSettings(BaseModel):
+
+class CoreSettings(BaseSettings):
     chat_model: str = "gpt-4"
     system_prompt: str = "You are a helpful assistant."
     temperature: float = 0.0

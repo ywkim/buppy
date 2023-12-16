@@ -9,6 +9,7 @@ from typing import Any
 from google.cloud import firestore
 from langchain.chat_models import ChatOpenAI
 
+from config.settings.api_settings import APISettings
 from config.settings.core_settings import CoreSettings
 from config.settings.firebase_settings import FirebaseSettings
 from config.settings.langsmith_settings import LangSmithSettings
@@ -56,6 +57,7 @@ class AppConfig(ABC):
 
     def __init__(self):
         """Initialize AppConfig with default settings."""
+        self.api_settings = APISettings()
         self.core_settings = CoreSettings()
         self.firebase_settings = FirebaseSettings()
         self.langsmith_settings = LangSmithSettings()
