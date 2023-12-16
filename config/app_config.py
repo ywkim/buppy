@@ -67,9 +67,9 @@ class AppConfig(ABC):
     }
 
     def __init__(self):
-        """Initialize AppConfig with default settings."""
-        self.config: ConfigParser = ConfigParser()
-        self.config.read_dict(self.DEFAULT_CONFIG)
+        self.general_settings = load_settings_from_env(GeneralSettings)
+        self.firebase_settings = load_settings_from_env(FirebaseSettings)
+        self.proactive_messaging_settings = load_settings_from_env(ProactiveMessagingSettings)
 
     @property
     def vision_enabled(self) -> bool:
