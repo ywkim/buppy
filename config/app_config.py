@@ -8,20 +8,11 @@ from typing import Any
 
 from google.cloud import firestore
 from langchain.chat_models import ChatOpenAI
-from core_settings import CoreSettings
-from firebase_settings import FirebaseSettings
-from proactive_messaging_settings import ProactiveMessagingSettings
-from config.loaders.env_loader import load_settings_from_env
+
 from config.settings.core_settings import CoreSettings
 from config.settings.firebase_settings import FirebaseSettings
-from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 from config.settings.langsmith_settings import LangSmithSettings
-from config.loaders.env_loader import load_settings_from_env
-from config.loaders.firebase_loader import load_settings_from_firestore
-from config.loaders.ini_loader import load_settings_from_ini
-
-from abc import ABC, abstractmethod
-from google.cloud import firestore
+from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 
 MAX_TOKENS = 1023
 
@@ -67,12 +58,8 @@ class AppConfig(ABC):
         """Initialize AppConfig with default settings."""
         self.core_settings = CoreSettings()
         self.firebase_settings = FirebaseSettings()
-        self.proactive_messaging_settings = ProactiveMessagingSettings()
         self.langsmith_settings = LangSmithSettings()
-
-    def load_all_settings(self):
-        self.core_settings = load_settings_from_env(CoreSettings)
-        # ... 다른 설정들 로드 ...
+        self.proactive_messaging_settings = ProactiveMessagingSettings()
 
     @property
     def vision_enabled(self) -> bool:
@@ -96,16 +83,6 @@ class AppConfig(ABC):
     def langsmith_api_key(self) -> str:
         """Retrieves the LangSmith API key."""
         return self.config.get("langsmith", "api_key")
-
-    @property
-    def proactive_messaging_settings(self) -> dict[str, Any]:
-        settings: dict[str, Any] = {"enabled": self.proactive_messaging_enabled}
-        if self.proactive_messaging_enabled:
-            settings["interval_days"] = self.proactive_message_interval_days
-            settings["system_prompt"] = self.proactive_system_prompt
-            settings["slack_channel"] = self.proactive_slack_channel
-            settings["temperature"] = self.proactive_message_temperature
-        return settings
 
     @property
     def proactive_messaging_enabled(self) -> bool:
@@ -213,11 +190,12 @@ class AppConfig(ABC):
 
     @abstractmethod
     def load_config(self):
-        self.core_settings, self.firebase_settings, self.proactive_messaging_settings, self.langsmith_settings = load_settings_from_env()
-        # TODO: 다른 출처에서 설정을 로드하는 로직을 추가합니다.
+        """
+        Abstract method to load configuration.
 
-    # 기존의 메서드들은 새로운 설정 시스템을 사용하도록 수정합니다.
-    # 예를 들어, self.config.getboolean("settings", "vision_enabled") 대신 self.core_settings.vision_enabled을 사용합니다.
+        This method should be implemented in derived classes to load configurations
+        from specific sources.
+        """
 
     def get_readable_config(self) -> str:
         """

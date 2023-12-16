@@ -1,10 +1,4 @@
 from __future__ import annotations
-from typing import Union, Optional
-from .settings.core_settings import CoreSettings
-from .settings.firebase_settings import FirebaseSettings
-from .settings.proactive_messaging_settings import ProactiveMessagingSettings
-from .settings.langsmith_settings import LangSmithSettings
-from .loaders.ini_loader import load_settings_from_ini_section
 
 import logging
 import os
@@ -13,11 +7,13 @@ from typing import Any
 from google.cloud import firestore
 
 from config.app_config import AppConfig, safely_get_field
+from config.loaders.ini_loader import load_settings_from_ini_section
 
-from pathlib import Path
-from config.app_config import AppConfig
-from config.loaders.ini_loader import load_settings_from_ini
 from config.settings.core_settings import CoreSettings
+from config.settings.firebase_settings import FirebaseSettings
+from config.settings.langsmith_settings import LangSmithSettings
+from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
+
 
 class SlackAppConfig(AppConfig):
     """
@@ -30,23 +26,21 @@ class SlackAppConfig(AppConfig):
         config (ConfigParser): A ConfigParser object holding the configuration.
     """
 
-    def load_config(self, config_file: Union[str, None] = None) -> None:
-        """Load configuration from an INI file and update the settings."""
-        if not config_file:
-            return
-
+    def load_config_from_file(self, config_file: str) -> None:
+        """Load configuration from a given file path."""
         self.core_settings = load_settings_from_ini_section(
-            config_file, 'core', CoreSettings
+            config_file, "settings", CoreSettings
         )
         self.firebase_settings = load_settings_from_ini_section(
-            config_file, 'firebase', FirebaseSettings
+            config_file, "firebase", FirebaseSettings
         )
         self.proactive_messaging_settings = load_settings_from_ini_section(
-            config_file, 'proactive_messaging', ProactiveMessagingSettings
+            config_file, "proactive_messaging", ProactiveMessagingSettings
         )
         self.langsmith_settings = load_settings_from_ini_section(
-            config_file, 'langsmith', LangSmithSettings
+            config_file, "langsmith", LangSmithSettings
         )
+        logging.info("Configuration loaded from file %s", config_file)
 
     def load_config_from_env_vars(self) -> None:
         """Load configuration from environment variables."""
