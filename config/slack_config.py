@@ -8,6 +8,10 @@ from google.cloud import firestore
 
 from config.app_config import AppConfig, safely_get_field
 
+from pathlib import Path
+from config.app_config import AppConfig
+from config.loaders.ini_loader import load_settings_from_ini
+from config.settings.core_settings import CoreSettings
 
 class SlackAppConfig(AppConfig):
     """
@@ -20,9 +24,9 @@ class SlackAppConfig(AppConfig):
         config (ConfigParser): A ConfigParser object holding the configuration.
     """
 
-    def load_config_from_file(self, config_file: str) -> None:
-        """Load configuration from a given file path."""
-        self.config.read(config_file)
+    def load_config(self, config_file: Path) -> None:
+        """Load configuration from an INI file."""
+        self.core_settings = load_settings_from_ini(CoreSettings, config_file)
         logging.info("Configuration loaded from file %s", config_file)
 
     def load_config_from_env_vars(self) -> None:

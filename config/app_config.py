@@ -63,17 +63,12 @@ class AppConfig(ABC):
     variables, Firestore, and INI files.
     """
 
-    core_settings: CoreSettings
-    firebase_settings: FirebaseSettings
-    proactive_messaging_settings: ProactiveMessagingSettings
-    langsmith_settings: LangSmithSettings
-
     def __init__(self):
-        self.core_settings: CoreSettings
-        self.firebase_settings: FirebaseSettings
-        self.proactive_messaging_settings: ProactiveMessagingSettings
-        self.langsmith_settings: LangSmithSettings
-        self.load_config()
+        """Initialize AppConfig with default settings."""
+        self.core_settings = CoreSettings()
+        self.firebase_settings = FirebaseSettings()
+        self.proactive_messaging_settings = ProactiveMessagingSettings()
+        self.langsmith_settings = LangSmithSettings()
 
     def load_all_settings(self):
         self.core_settings = load_settings_from_env(CoreSettings)
