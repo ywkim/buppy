@@ -17,7 +17,8 @@ from config.settings.firebase_settings import FirebaseSettings
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 from config.settings.langsmith_settings import LangSmithSettings
 from config.loaders.env_loader import load_settings_from_env
-from config.loaders.file_loader import load_settings_from_file
+from config.loaders.firebase_loader import load_settings_from_firestore
+from config.loaders.ini_loader import load_settings_from_ini
 
 from abc import ABC, abstractmethod
 from google.cloud import firestore
@@ -55,13 +56,11 @@ def safely_get_field(
 
 class AppConfig(ABC):
     """
-    Manages the application configuration settings.
+    Application configuration manager.
 
-    This class is responsible for loading configuration settings from various sources
-    including environment variables, files, and Firebase Firestore.
-
-    Attributes:
-        config (ConfigParser): A ConfigParser object holding the configuration.
+    Manages configuration settings for the application using Pydantic models
+    and loaders to obtain settings from various sources such as environment
+    variables, Firestore, and INI files.
     """
 
     core_settings: CoreSettings
