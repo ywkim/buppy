@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Type
+import os
+from typing import Any
 
-from config.app_config import AppConfig
+from google.cloud import firestore
+
+from config.app_config import AppConfig, safely_get_field
 from config.loaders.env_loader import load_env_value
 from config.loaders.ini_loader import load_settings_from_ini_section
 from config.settings.core_settings import CoreSettings
@@ -14,13 +17,15 @@ from config.settings.proactive_messaging_settings import ProactiveMessagingSetti
 
 class SlackAppConfig(AppConfig):
     """
-    Manages the application configuration settings.
-
-    This class is responsible for loading configuration settings from various sources
-    including environment variables, files, and Firebase Firestore.
+    Manages Slack application configuration settings, loading them from various
+    sources like environment variables, INI files, and Firebase Firestore.
 
     Attributes:
-        config (ConfigParser): A ConfigParser object holding the configuration.
+        api_settings (APISettings): API related settings.
+        core_settings (CoreSettings): Core application settings.
+        firebase_settings (FirebaseSettings): Firebase integration settings.
+        proactive_messaging_settings (ProactiveMessagingSettings): Settings for proactive messaging.
+        langsmith_settings (LangSmithSettings): LangSmith feature settings.
     """
 
     def load_config_from_file(self, config_file: str) -> None:
@@ -86,7 +91,7 @@ class SlackAppConfig(AppConfig):
         if safely_get_field(
             bot_document,
             "proactive_messaging.enabled",
-            self.DEFAULT_CONFIG["proactive_messaging"]["enabled"],
+            default=self.proactive_messaging_settings.enabled
         ):
             proactive_messaging_settings: dict[str, Any] = {
                 "enabled": True,
@@ -96,10 +101,10 @@ class SlackAppConfig(AppConfig):
                 "temperature": safely_get_field(
                     bot_document,
                     "proactive_messaging.temperature",
-                    self.DEFAULT_CONFIG["proactive_messaging"]["temperature"],
+                    default=self.proactive_messaging_settings.temperature
                 ),
             }
-            self.config.read_dict({"proactive_messaging": proactive_messaging_settings})
+            self.proactive_messaging_settings = ProactiveMessagingSettings(**proactive_messaging_settings)
 
     def _apply_slack_tokens_from_bot(
         self, bot_document: firestore.DocumentSnapshot
@@ -113,14 +118,9 @@ class SlackAppConfig(AppConfig):
         slack_bot_token = bot_document.get("slack_bot_token")
         slack_app_token = bot_document.get("slack_app_token")
 
-        # Update configuration with fetched tokens
-        token_config = {
-            "api": {
-                "slack_bot_token": slack_bot_token,
-                "slack_app_token": slack_app_token,
-            }
-        }
-        self.config.read_dict(token_config)
+        # Update API settings with fetched tokens
+        self.api_settings.slack_bot_token = slack_bot_token
+        self.api_settings.slack_app_token = slack_app_token
 
     async def load_config_from_firebase(self, bot_user_id: str) -> None:
         """
@@ -130,9 +130,6 @@ class SlackAppConfig(AppConfig):
 
         Args:
             bot_user_id (str): The unique identifier for the bot.
-
-        Raises:
-            FileNotFoundError: If the bot or companion document does not exist in Firebase.
         """
         db = firestore.AsyncClient()
         bot_ref = db.collection("Bots").document(bot_user_id)
@@ -145,8 +142,16 @@ class SlackAppConfig(AppConfig):
         self._apply_proactive_messaging_settings_from_bot(bot)
         self._apply_slack_tokens_from_bot(bot)
 
-        self.bot_token = self.config.get("api", "slack_bot_token")
-        self.app_token = self.config.get("api", "slack_app_token")
+        # Ensure that the tokens are not None before assignment
+        if self.api_settings.slack_bot_token is not None:
+            self.bot_token = self.api_settings.slack_bot_token
+        else:
+            raise ValueError("Slack bot token is missing in API settings.")
+
+        if self.api_settings.slack_app_token is not None:
+            self.app_token = self.api_settings.slack_app_token
+        else:
+            raise ValueError("Slack app token is missing in API settings.")
 
         companion_id = bot.get("CompanionId")
         companion_ref = db.collection("Companions").document(companion_id)

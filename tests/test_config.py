@@ -1,20 +1,20 @@
+from __future__ import annotations
+
 import os
 import unittest
 from unittest.mock import patch
 
-from main import SlackAppConfig
+from config.settings.api_settings import APISettings
+from config.settings.firebase_settings import FirebaseSettings
+from config.slack_config import SlackAppConfig
 
 
-class TestConfig(unittest.TestCase):
+class TestSlackAppConfig(unittest.TestCase):
     """
-    Test class for configuration loading functions.
+    Test class for SlackAppConfig configuration loading functions.
 
-    ...
-
-    Attributes
-    ----------
-    config_structure : dict
-        structure of the configuration (i.e., sections and options)
+    Attributes:
+        config_structure: dict structure of the configuration (i.e., sections and options).
     """
 
     def setUp(self) -> None:
@@ -31,9 +31,10 @@ class TestConfig(unittest.TestCase):
                 "temperature",
             },
         }
+        self.app_config = SlackAppConfig()
 
     def test_load_config_from_env_vars(self) -> None:
-        """Test load_config_from_env_vars() function to verify if it correctly reads the environment variables."""
+        """Test load_config_from_env_vars() to verify correct reading of environment variables."""
         with patch.dict(
             os.environ,
             {
@@ -43,10 +44,18 @@ class TestConfig(unittest.TestCase):
                 "CHAT_MODEL": "gpt-4",
                 "SYSTEM_PROMPT": "You are a helpful assistant.",
                 "TEMPERATURE": "0",
+                "FIREBASE_ENABLED": "False",
             },
         ):
-            app_config = SlackAppConfig()
-            app_config.load_config_from_env_vars()
+            self.app_config.load_config_from_env_vars()
+
+    def test_validation(self):
+        """Test configuration validation logic."""
+        self.app_config.api_settings = APISettings(
+            slack_bot_user_id="test_id", openai_api_key="test_api_key"
+        )
+        self.app_config.firebase_settings = FirebaseSettings(enabled=True)
+        self.app_config._validate_config()
 
 
 if __name__ == "__main__":
