@@ -8,6 +8,7 @@ from langchain.schema import SystemMessage
 from slack_bolt.async_app import AsyncApp
 
 from config.app_config import init_proactive_chat_model
+from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 from config.slack_config import SlackAppConfig
 
 
@@ -43,17 +44,20 @@ def should_reschedule(old_config: dict[str, Any], new_config: dict[str, Any]) ->
     return old_interval != new_interval
 
 
-def calculate_next_schedule_time(config: dict[str, Any]) -> datetime:
+def calculate_next_schedule_time(settings: ProactiveMessagingSettings) -> datetime:
     """
-    Calculates the next schedule time for a proactive message.
+    Calculates the next schedule time for a proactive message based on the interval settings.
 
     Args:
-        config (dict[str, Any]): Proactive messaging configuration.
+        settings (ProactiveMessagingSettings): Configuration settings for proactive messaging.
 
     Returns:
-        datetime: The calculated next schedule time.
+        datetime: The calculated next schedule time for a proactive message.
     """
-    interval_days = config["interval_days"]
+    interval_days = settings.interval_days
+    if interval_days is None:
+        raise ValueError("interval_days must be set for proactive messaging.")
+
     return datetime.now() + timedelta(days=interval_days * random.random() * 2)
 
 
