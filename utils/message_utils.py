@@ -93,16 +93,13 @@ def prepare_chat_messages(
     Returns:
         list[BaseMessage]: The prepared list of messages including prefix messages.
     """
-    config = app_config.config
-    system_prompt = SystemMessage(content=config.get("settings", "system_prompt"))
+    system_prompt = SystemMessage(content=app_config.core_settings.system_prompt)
 
     # Check if 'message_file' setting presents. If it does, load prefix messages from file.
     # If not, check if 'prefix_messages_content' is not None, then parse it to create the list of prefix messages
 
-    message_file_path = config.get("settings", "message_file", fallback=None)
-    prefix_messages_content = config.get(
-        "settings", "prefix_messages_content", fallback=None
-    )
+    message_file_path = app_config.core_settings.message_file
+    prefix_messages_content = app_config.core_settings.prefix_messages_content
 
     prefix_messages: list[BaseMessage] = []
 

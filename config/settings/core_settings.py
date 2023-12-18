@@ -9,4 +9,5 @@ class CoreSettings(BaseSettings):
     system_prompt: str = "You are a helpful assistant."
     temperature: float = 0.0
     vision_enabled: bool = False
+    message_file: Optional[str] = None
     prefix_messages_content: Optional[str] = None
