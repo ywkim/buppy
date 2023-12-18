@@ -5,6 +5,12 @@ from google.cloud import firestore
 from google.oauth2 import service_account
 
 from config.app_config import AppConfig
+from config.loaders.streamlit_loader import load_settings_from_streamlit_secrets
+from config.settings.api_settings import APISettings
+from config.settings.core_settings import CoreSettings
+from config.settings.firebase_settings import FirebaseSettings
+from config.settings.langsmith_settings import LangSmithSettings
+from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 
 
 class StreamlitAppConfig(AppConfig):
@@ -12,13 +18,20 @@ class StreamlitAppConfig(AppConfig):
 
     def _load_config_from_streamlit_secrets(self):
         """Loads configuration from Streamlit secrets."""
-        self.config.read_dict(
-            {
-                key: value
-                for key, value in st.secrets.items()
-                if key != "firebase_service_account"
-            }
+        self.api_settings = load_settings_from_streamlit_secrets(APISettings, "api")
+        self.core_settings = load_settings_from_streamlit_secrets(
+            CoreSettings, "settings"
         )
+        self.firebase_settings = load_settings_from_streamlit_secrets(
+            FirebaseSettings, "firebase"
+        )
+        self.langsmith_settings = load_settings_from_streamlit_secrets(
+            LangSmithSettings, "langsmith"
+        )
+        self.proactive_messaging_settings = load_settings_from_streamlit_secrets(
+            ProactiveMessagingSettings, "proactive_messaging"
+        )
+        logging.info("Configuration loaded from Streamlit secrets")
 
     def _initialize_firebase_client(self) -> firestore.Client:
         """

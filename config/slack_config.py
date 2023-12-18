@@ -2,85 +2,79 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any
 
 from google.cloud import firestore
 
-from config.app_config import AppConfig, safely_get_field
+from config.app_config import AppConfig
+from config.loaders.env_loader import load_env_value
+from config.loaders.firebase_loader import load_settings_from_firestore
+from config.loaders.ini_loader import load_settings_from_ini_section
+from config.settings.api_settings import APISettings
+from config.settings.core_settings import CoreSettings
+from config.settings.firebase_settings import FirebaseSettings
+from config.settings.langsmith_settings import LangSmithSettings
+from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 
 
 class SlackAppConfig(AppConfig):
     """
-    Manages the application configuration settings.
-
-    This class is responsible for loading configuration settings from various sources
-    including environment variables, files, and Firebase Firestore.
+    Manages Slack application configuration settings, loading them from various
+    sources like environment variables, INI files, and Firebase Firestore.
 
     Attributes:
-        config (ConfigParser): A ConfigParser object holding the configuration.
+        api_settings (APISettings): API related settings.
+        core_settings (CoreSettings): Core application settings.
+        firebase_settings (FirebaseSettings): Firebase integration settings.
+        proactive_messaging_settings (ProactiveMessagingSettings): Settings for proactive messaging.
+        langsmith_settings (LangSmithSettings): LangSmith feature settings.
     """
 
     def load_config_from_file(self, config_file: str) -> None:
         """Load configuration from a given file path."""
-        self.config.read(config_file)
+        self.api_settings = load_settings_from_ini_section(
+            APISettings, config_file, "api"
+        )
+        self.core_settings = load_settings_from_ini_section(
+            CoreSettings, config_file, "settings"
+        )
+        self.firebase_settings = load_settings_from_ini_section(
+            FirebaseSettings, config_file, "firebase"
+        )
+        self.proactive_messaging_settings = load_settings_from_ini_section(
+            ProactiveMessagingSettings, config_file, "proactive_messaging"
+        )
+        self.langsmith_settings = load_settings_from_ini_section(
+            LangSmithSettings, config_file, "langsmith"
+        )
         logging.info("Configuration loaded from file %s", config_file)
 
     def load_config_from_env_vars(self) -> None:
-        """Load configuration from environment variables."""
-        firebase_enabled = os.environ.get(
-            "FIREBASE_ENABLED", str(self.DEFAULT_CONFIG["firebase"]["enabled"])
-        ).lower() in {"true", "1", "yes"}
+        """
+        Load configuration from environment variables.
 
-        env_config: dict[str, dict[str, Any]] = {
-            "api": {
-                "openai_api_key": os.environ.get("OPENAI_API_KEY"),
-            },
-            "settings": {
-                "chat_model": os.environ.get(
-                    "CHAT_MODEL", self.DEFAULT_CONFIG["settings"]["chat_model"]
-                ),
-                "system_prompt": os.environ.get(
-                    "SYSTEM_PROMPT", self.DEFAULT_CONFIG["settings"]["system_prompt"]
-                ),
-                "temperature": os.environ.get(
-                    "TEMPERATURE", str(self.DEFAULT_CONFIG["settings"]["temperature"])
-                ),
-                "vision_enabled": os.environ.get(
-                    "VISION_ENABLED",
-                    str(self.DEFAULT_CONFIG["settings"]["vision_enabled"]),
-                ).lower()
-                in {"true", "1", "yes"},
-            },
-            "firebase": {"enabled": firebase_enabled},
-        }
-
-        openai_org = os.environ.get("OPENAI_ORGANIZATION", None)
-        if openai_org is not None:
-            env_config["api"]["openai_organization"] = openai_org
-
-        if firebase_enabled:
-            env_config["api"]["slack_bot_user_id"] = os.environ.get("SLACK_BOT_USER_ID")
-        else:
-            env_config["api"]["slack_bot_token"] = os.environ.get("SLACK_BOT_TOKEN")
-            env_config["api"]["slack_app_token"] = os.environ.get("SLACK_APP_TOKEN")
-
-        self.config.read_dict(env_config)
-        logging.info("Configuration loaded from environment variables")
+        This method loads the Firebase and API related settings from the
+        environment variables. It validates the configurations based on the
+        enabled/disabled status of certain features.
+        """
+        # Load Firebase settings
+        self.firebase_settings.enabled = load_env_value(
+            "FIREBASE_ENABLED", self.firebase_settings.enabled, bool
+        )
 
     def _validate_config(self) -> None:
         """Validate that required configuration variables are present."""
         super()._validate_config()
 
-        if self.firebase_enabled:
-            if not self.config["api"].get("slack_bot_user_id"):
+        if self.firebase_settings.enabled:
+            if not self.api_settings.slack_bot_user_id:
                 raise ValueError("Missing configuration for slack_bot_user_id")
         else:
-            if not self.config["api"].get("slack_bot_token"):
+            if not self.api_settings.slack_bot_token:
                 raise ValueError("Missing configuration for slack_bot_token")
-            if not self.config["api"].get("slack_app_token"):
+            if not self.api_settings.slack_app_token:
                 raise ValueError("Missing configuration for slack_app_token")
-            self.bot_token = self.config.get("api", "slack_bot_token")
-            self.app_token = self.config.get("api", "slack_app_token")
+            self.bot_token = self.api_settings.slack_bot_token
+            self.app_token = self.api_settings.slack_app_token
 
     def _apply_proactive_messaging_settings_from_bot(
         self, bot_document: firestore.DocumentSnapshot
@@ -98,23 +92,10 @@ class SlackAppConfig(AppConfig):
             bot_document (firestore.DocumentSnapshot): A snapshot of the Firestore
                                                       document for the bot.
         """
-        if safely_get_field(
-            bot_document,
-            "proactive_messaging.enabled",
-            self.DEFAULT_CONFIG["proactive_messaging"]["enabled"],
-        ):
-            proactive_messaging_settings: dict[str, Any] = {
-                "enabled": True,
-                "interval_days": bot_document.get("proactive_messaging.interval_days"),
-                "system_prompt": bot_document.get("proactive_messaging.system_prompt"),
-                "slack_channel": bot_document.get("proactive_messaging.slack_channel"),
-                "temperature": safely_get_field(
-                    bot_document,
-                    "proactive_messaging.temperature",
-                    self.DEFAULT_CONFIG["proactive_messaging"]["temperature"],
-                ),
-            }
-            self.config.read_dict({"proactive_messaging": proactive_messaging_settings})
+        self.proactive_messaging_settings = load_settings_from_firestore(
+            ProactiveMessagingSettings, bot_document, "proactive_messaging"
+        )
+        logging.info("Proactive messaging settings applied from Firestore document.")
 
     def _apply_slack_tokens_from_bot(
         self, bot_document: firestore.DocumentSnapshot
@@ -128,14 +109,9 @@ class SlackAppConfig(AppConfig):
         slack_bot_token = bot_document.get("slack_bot_token")
         slack_app_token = bot_document.get("slack_app_token")
 
-        # Update configuration with fetched tokens
-        token_config = {
-            "api": {
-                "slack_bot_token": slack_bot_token,
-                "slack_app_token": slack_app_token,
-            }
-        }
-        self.config.read_dict(token_config)
+        # Update API settings with fetched tokens
+        self.api_settings.slack_bot_token = slack_bot_token
+        self.api_settings.slack_app_token = slack_app_token
 
     async def load_config_from_firebase(self, bot_user_id: str) -> None:
         """
@@ -145,9 +121,6 @@ class SlackAppConfig(AppConfig):
 
         Args:
             bot_user_id (str): The unique identifier for the bot.
-
-        Raises:
-            FileNotFoundError: If the bot or companion document does not exist in Firebase.
         """
         db = firestore.AsyncClient()
         bot_ref = db.collection("Bots").document(bot_user_id)
@@ -160,8 +133,16 @@ class SlackAppConfig(AppConfig):
         self._apply_proactive_messaging_settings_from_bot(bot)
         self._apply_slack_tokens_from_bot(bot)
 
-        self.bot_token = self.config.get("api", "slack_bot_token")
-        self.app_token = self.config.get("api", "slack_app_token")
+        # Ensure that the tokens are not None before assignment
+        if self.api_settings.slack_bot_token is not None:
+            self.bot_token = self.api_settings.slack_bot_token
+        else:
+            raise ValueError("Slack bot token is missing in API settings.")
+
+        if self.api_settings.slack_app_token is not None:
+            self.app_token = self.api_settings.slack_app_token
+        else:
+            raise ValueError("Slack app token is missing in API settings.")
 
         companion_id = bot.get("CompanionId")
         companion_ref = db.collection("Companions").document(companion_id)

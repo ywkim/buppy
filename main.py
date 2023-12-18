@@ -148,7 +148,7 @@ def register_events_and_commands(app: AsyncApp, app_config: SlackAppConfig) -> N
 
     Args:
         app (AsyncApp): The Slack application to which the event handlers will be registered.
-        app_config (AppConfig): The application configuration.
+        app_config (SlackAppConfig): The application configuration.
     """
 
     @app.event("message")
@@ -409,7 +409,10 @@ async def main():
 
     # Load Firebase configuration if enabled
     if app_config.firebase_enabled:
-        bot_user_id_from_config = app_config.config.get("api", "slack_bot_user_id")
+        bot_user_id_from_config = app_config.api_settings.slack_bot_user_id
+        if bot_user_id_from_config is None:
+            raise ValueError("Bot User ID is not configured in API settings.")
+
         await app_config.load_config_from_firebase(bot_user_id_from_config)
         logging.info("Override configuration with Firebase settings")
 
