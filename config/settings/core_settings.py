@@ -11,3 +11,6 @@ class CoreSettings(BaseSettings):
     vision_enabled: bool = False
     message_file: Optional[str] = None
     prefix_messages_content: Optional[str] = None
+
+    class Config:
+        extra = "allow"

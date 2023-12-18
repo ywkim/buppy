@@ -10,3 +10,6 @@ class APISettings(BaseSettings):
     slack_bot_user_id: Optional[str] = None
     slack_bot_token: Optional[str] = None
     slack_app_token: Optional[str] = None
+
+    class Config:
+        extra = "allow"
