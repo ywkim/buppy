@@ -25,7 +25,7 @@ class TestIniLoader(unittest.TestCase):
             self.temp_ini_file_name = temp_file.name
             config_parser = ConfigParser()
             config_parser.add_section("Dummy")
-            config_parser.set("Dummy", "parameter1", "'value1'")
+            config_parser.set("Dummy", "parameter1", "value1")
             config_parser.set("Dummy", "parameter2", "10")
             config_parser.set("Dummy", "parameter3", "True")
             config_parser.write(temp_file)
@@ -61,8 +61,8 @@ class TestIniLoader(unittest.TestCase):
         with open(self.temp_ini_file_name, "w", encoding="utf-8") as file:
             config_parser = ConfigParser()
             config_parser.add_section("Dummy")
-            config_parser.set("Dummy", "parameter1", "'value1'")
-            config_parser.set("Dummy", "parameter2", "'not a number'")
+            config_parser.set("Dummy", "parameter1", "value1")
+            config_parser.set("Dummy", "parameter2", "not a number")
             config_parser.set("Dummy", "parameter3", "True")
             config_parser.write(file)
 
