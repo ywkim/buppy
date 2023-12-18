@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any
 
 from google.cloud import firestore
 
-from config.app_config import AppConfig, safely_get_field
+from config.app_config import AppConfig
 from config.loaders.env_loader import load_env_value
+from config.loaders.firebase_loader import load_settings_from_firestore
 from config.loaders.ini_loader import load_settings_from_ini_section
 from config.settings.api_settings import APISettings
 from config.settings.core_settings import CoreSettings
@@ -92,25 +92,10 @@ class SlackAppConfig(AppConfig):
             bot_document (firestore.DocumentSnapshot): A snapshot of the Firestore
                                                       document for the bot.
         """
-        if safely_get_field(
-            bot_document,
-            "proactive_messaging.enabled",
-            default=self.proactive_messaging_settings.enabled,
-        ):
-            proactive_messaging_settings: dict[str, Any] = {
-                "enabled": True,
-                "interval_days": bot_document.get("proactive_messaging.interval_days"),
-                "system_prompt": bot_document.get("proactive_messaging.system_prompt"),
-                "slack_channel": bot_document.get("proactive_messaging.slack_channel"),
-                "temperature": safely_get_field(
-                    bot_document,
-                    "proactive_messaging.temperature",
-                    default=self.proactive_messaging_settings.temperature,
-                ),
-            }
-            self.proactive_messaging_settings = ProactiveMessagingSettings(
-                **proactive_messaging_settings
-            )
+        self.proactive_messaging_settings = load_settings_from_firestore(
+            ProactiveMessagingSettings, bot_document, "proactive_messaging"
+        )
+        logging.info("Proactive messaging settings applied from Firestore document.")
 
     def _apply_slack_tokens_from_bot(
         self, bot_document: firestore.DocumentSnapshot
