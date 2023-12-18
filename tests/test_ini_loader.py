@@ -11,9 +11,9 @@ from config.loaders.ini_loader import load_settings_from_ini_section
 
 
 class DummySettings(BaseModel):
-    parameter1: str
-    parameter2: int
-    parameter3: bool
+    parameter1: str = "default1"
+    parameter2: int = 1
+    parameter3: bool = False
 
 
 class TestIniLoader(unittest.TestCase):
@@ -45,10 +45,16 @@ class TestIniLoader(unittest.TestCase):
 
     def test_load_settings_from_invalid_section(self):
         """Test loading settings from a non-existent section."""
-        with self.assertRaises(KeyError):
-            load_settings_from_ini_section(
-                self.temp_ini_file_name, "NonExistent", DummySettings
-            )
+        # Load settings from a section that doesn't exist
+        loaded_settings = load_settings_from_ini_section(
+            self.temp_ini_file_name, "NonExistent", DummySettings
+        )
+
+        # Assert that a default instance of DummySettings is returned
+        self.assertIsInstance(loaded_settings, DummySettings)
+        self.assertEqual(loaded_settings.parameter1, "default1")
+        self.assertEqual(loaded_settings.parameter2, 1)
+        self.assertFalse(loaded_settings.parameter3)
 
     def test_load_settings_with_type_mismatch(self):
         """Test loading settings with a type mismatch."""

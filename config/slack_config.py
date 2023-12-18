@@ -9,6 +9,7 @@ from google.cloud import firestore
 from config.app_config import AppConfig, safely_get_field
 from config.loaders.env_loader import load_env_value
 from config.loaders.ini_loader import load_settings_from_ini_section
+from config.settings.api_settings import APISettings
 from config.settings.core_settings import CoreSettings
 from config.settings.firebase_settings import FirebaseSettings
 from config.settings.langsmith_settings import LangSmithSettings
@@ -30,6 +31,9 @@ class SlackAppConfig(AppConfig):
 
     def load_config_from_file(self, config_file: str) -> None:
         """Load configuration from a given file path."""
+        self.api_settings = load_settings_from_ini_section(
+            config_file, "api", APISettings
+        )
         self.core_settings = load_settings_from_ini_section(
             config_file, "settings", CoreSettings
         )
@@ -91,7 +95,7 @@ class SlackAppConfig(AppConfig):
         if safely_get_field(
             bot_document,
             "proactive_messaging.enabled",
-            default=self.proactive_messaging_settings.enabled
+            default=self.proactive_messaging_settings.enabled,
         ):
             proactive_messaging_settings: dict[str, Any] = {
                 "enabled": True,
@@ -101,10 +105,12 @@ class SlackAppConfig(AppConfig):
                 "temperature": safely_get_field(
                     bot_document,
                     "proactive_messaging.temperature",
-                    default=self.proactive_messaging_settings.temperature
+                    default=self.proactive_messaging_settings.temperature,
                 ),
             }
-            self.proactive_messaging_settings = ProactiveMessagingSettings(**proactive_messaging_settings)
+            self.proactive_messaging_settings = ProactiveMessagingSettings(
+                **proactive_messaging_settings
+            )
 
     def _apply_slack_tokens_from_bot(
         self, bot_document: firestore.DocumentSnapshot
