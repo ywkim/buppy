@@ -1,14 +1,12 @@
 from __future__ import annotations
-
 from typing import TypeVar
-
 import streamlit as st
 from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
 
 
-def load_settings_from_streamlit_secrets(section: str, settings_class: type[T]):
+def load_settings_from_streamlit_secrets(section: str, settings_class: type[T]) -> T:
     """
     Loads settings from a specified section of Streamlit secrets into a Pydantic model.
     If the section does not exist, a default model instance is returned.

@@ -1,8 +1,6 @@
 from __future__ import annotations
-
 from configparser import ConfigParser
 from typing import TypeVar
-
 from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
@@ -27,8 +25,5 @@ def load_settings_from_ini_section(config_file: str, section: str, model: type[T
     if section not in parser:
         return model()
 
-    # Convert the settings in the section to a dictionary
     settings = dict(parser.items(section))
-
-    # Create an instance of the Pydantic model with the settings
     return model(**settings)
