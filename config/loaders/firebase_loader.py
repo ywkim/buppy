@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from typing import TypeVar
+
 from google.cloud import firestore
 from pydantic import BaseModel
 

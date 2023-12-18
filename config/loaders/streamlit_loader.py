@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 from typing import TypeVar
+
 import streamlit as st
 from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
+
 
 def load_settings_from_streamlit_secrets(settings_class: type[T], section: str) -> T:
     """
