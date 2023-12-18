@@ -37,7 +37,7 @@ class TestIniLoader(unittest.TestCase):
     def test_load_settings_from_valid_section(self):
         """Test loading settings from a valid section of the INI file."""
         loaded_settings = load_settings_from_ini_section(
-            self.temp_ini_file_name, "Dummy", DummySettings
+            DummySettings, self.temp_ini_file_name, "Dummy"
         )
         self.assertEqual(loaded_settings.parameter1, "value1")
         self.assertEqual(loaded_settings.parameter2, 10)
@@ -47,7 +47,7 @@ class TestIniLoader(unittest.TestCase):
         """Test loading settings from a non-existent section."""
         # Load settings from a section that doesn't exist
         loaded_settings = load_settings_from_ini_section(
-            self.temp_ini_file_name, "NonExistent", DummySettings
+            DummySettings, self.temp_ini_file_name, "NonExistent"
         )
 
         # Assert that a default instance of DummySettings is returned
@@ -68,7 +68,7 @@ class TestIniLoader(unittest.TestCase):
 
         with self.assertRaises(ValidationError):
             load_settings_from_ini_section(
-                self.temp_ini_file_name, "Dummy", DummySettings
+                DummySettings, self.temp_ini_file_name, "Dummy"
             )
 
 

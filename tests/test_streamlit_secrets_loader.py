@@ -31,7 +31,7 @@ class TestStreamlitSecretsLoader(unittest.TestCase):
         """Test loading settings from a valid section of the Streamlit secrets."""
         with patch("streamlit.secrets", self.mocked_secrets):
             loaded_settings = load_settings_from_streamlit_secrets(
-                "Dummy", DummySettings
+                DummySettings, "Dummy"
             )
             self.assertEqual(loaded_settings.parameter1, "value1")
             self.assertEqual(loaded_settings.parameter2, 10)
@@ -41,7 +41,7 @@ class TestStreamlitSecretsLoader(unittest.TestCase):
         """Test loading settings from a non-existent section."""
         with patch("streamlit.secrets", self.mocked_secrets):
             loaded_settings = load_settings_from_streamlit_secrets(
-                "NonExistent", DummySettings
+                DummySettings, "NonExistent"
             )
             self.assertIsInstance(loaded_settings, DummySettings)
             self.assertEqual(loaded_settings.parameter1, "default1")
@@ -54,7 +54,7 @@ class TestStreamlitSecretsLoader(unittest.TestCase):
         self.mocked_secrets["Dummy"]["parameter2"] = "not a number"
         with patch("streamlit.secrets", self.mocked_secrets):
             with self.assertRaises(ValidationError):
-                load_settings_from_streamlit_secrets("Dummy", DummySettings)
+                load_settings_from_streamlit_secrets(DummySettings, "Dummy")
 
 
 if __name__ == "__main__":

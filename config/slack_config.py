@@ -32,19 +32,19 @@ class SlackAppConfig(AppConfig):
     def load_config_from_file(self, config_file: str) -> None:
         """Load configuration from a given file path."""
         self.api_settings = load_settings_from_ini_section(
-            config_file, "api", APISettings
+            APISettings, config_file, "api"
         )
         self.core_settings = load_settings_from_ini_section(
-            config_file, "settings", CoreSettings
+            CoreSettings, config_file, "settings"
         )
         self.firebase_settings = load_settings_from_ini_section(
-            config_file, "firebase", FirebaseSettings
+            FirebaseSettings, config_file, "firebase"
         )
         self.proactive_messaging_settings = load_settings_from_ini_section(
-            config_file, "proactive_messaging", ProactiveMessagingSettings
+            ProactiveMessagingSettings, config_file, "proactive_messaging"
         )
         self.langsmith_settings = load_settings_from_ini_section(
-            config_file, "langsmith", LangSmithSettings
+            LangSmithSettings, config_file, "langsmith"
         )
         logging.info("Configuration loaded from file %s", config_file)
 

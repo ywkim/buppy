@@ -18,18 +18,18 @@ class StreamlitAppConfig(AppConfig):
 
     def _load_config_from_streamlit_secrets(self):
         """Loads configuration from Streamlit secrets."""
-        self.api_settings = load_settings_from_streamlit_secrets("api", APISettings)
+        self.api_settings = load_settings_from_streamlit_secrets(APISettings, "api")
         self.core_settings = load_settings_from_streamlit_secrets(
-            "settings", CoreSettings
+            CoreSettings, "settings"
         )
         self.firebase_settings = load_settings_from_streamlit_secrets(
-            "firebase", FirebaseSettings
+            FirebaseSettings, "firebase"
         )
         self.langsmith_settings = load_settings_from_streamlit_secrets(
-            "langsmith", LangSmithSettings
+            LangSmithSettings, "langsmith"
         )
         self.proactive_messaging_settings = load_settings_from_streamlit_secrets(
-            "proactive_messaging", ProactiveMessagingSettings
+            ProactiveMessagingSettings, "proactive_messaging"
         )
         logging.info("Configuration loaded from Streamlit secrets")
 
