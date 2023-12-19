@@ -23,8 +23,9 @@ def should_reschedule(old_config: dict[str, Any], new_config: dict[str, Any]) ->
     Returns:
         bool: True if the interval settings have changed, False otherwise.
     """
-    old_interval = old_config["interval_days"]
-    new_interval = new_config["interval_days"]
+    old_interval = old_config.get("interval_days")
+    new_interval = new_config.get("interval_days")
+
     return old_interval != new_interval
 
 
