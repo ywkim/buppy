@@ -42,21 +42,18 @@ class TestProactiveMessagingManager(unittest.TestCase):
         self.mock_document_ref.update.assert_called()
 
     def test_update_task_id_in_firestore(self):
-        """
-        Test the update_task_id_in_firestore function to ensure it correctly updates the task ID in Firestore.
-        """
+        # Setup mock for Firestore document
+        mock_doc_ref = self.mock_db_client.collection("Bots").document(self.bot_id)
+
+        # Call the function under test
         messaging_manager.update_task_id_in_firestore(
-            self.mock_db_client,
-            self.bot_id,
-            self.task_id
+            self.mock_db_client, self.bot_id, self.task_id
         )
 
-        # Check if the Firestore document is updated with the new task ID
-        self.mock_document_ref.update.assert_called_with(
+        # Assert the expected call
+        mock_doc_ref.update.assert_called_with(
             {"proactive_messaging.current_task_id": self.task_id}
         )
-
-    # Additional tests can be added here to cover more scenarios and edge cases
 
 if __name__ == "__main__":
     unittest.main()
