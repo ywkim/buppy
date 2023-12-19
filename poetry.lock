@@ -1742,6 +1742,17 @@ files = [
 ]
 
 [[package]]
+name = "mock-firestore"
+version = "0.11.0"
+description = "In-memory implementation of Google Cloud Firestore for use in tests"
+optional = false
+python-versions = "*"
+files = [
+    {file = "mock-firestore-0.11.0.tar.gz", hash = "sha256:4958b983534b890f7cdffe12b651b1deefa6ee202ee46af751c6bdaa44fe3432"},
+    {file = "mock_firestore-0.11.0-py3-none-any.whl", hash = "sha256:9e847a886a64d490bf13e2d52105745b6618d6a7e7169aeb62d4b895c405d204"},
+]
+
+[[package]]
 name = "mpmath"
 version = "1.3.0"
 description = "Python library for arbitrary-precision floating-point arithmetic"
@@ -4344,4 +4355,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.6,<3.9.7"
-content-hash = "121663879ead7be3b515acf0ea8da1fd31759bdf150ac323ae4d93b75076d800"
+content-hash = "536949e3876023cab16e1cc928e1c0380154b1b1738f721f2d408bc5cb83e1c8"

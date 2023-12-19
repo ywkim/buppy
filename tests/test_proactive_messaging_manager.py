@@ -2,7 +2,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import Mock, patch, MagicMock
 
-from google.cloud import firestore
+import mockfirestore
 from google.cloud.firestore import Transaction, DocumentReference
 from celery import Celery
 
@@ -13,7 +13,7 @@ import firestore_managers.proactive_messaging_manager as messaging_manager
 class TestProactiveMessagingManager(unittest.TestCase):
     def setUp(self):
         # Mocks for Firestore client and Celery
-        self.mock_db_client = Mock(spec=firestore.Client)
+        self.mock_db_client = mockfirestore.MockFirestore()
         self.mock_celery_app = Mock(spec=Celery)
         self.mock_transaction = MagicMock(spec=Transaction)
         self.mock_document_ref = Mock(spec=DocumentReference)
@@ -21,14 +21,12 @@ class TestProactiveMessagingManager(unittest.TestCase):
         self.task_id = "test_task_id"
         self.proactive_config = {"config_key": "config_value"}
 
-    @patch('google.cloud.firestore.Client.transaction')
-    def test_update_proactive_messaging_settings(self, mock_transaction):
+    def test_update_proactive_messaging_settings(self):
         """
         Test the update_proactive_messaging_settings function to ensure it correctly handles Firestore transactions and updates.
         """
-        mock_transaction.return_value = self.mock_transaction
         messaging_manager.update_proactive_messaging_settings(
-            self.mock_db_client,
+            self.mock_db_client.transaction(),
             self.mock_celery_app,
             self.mock_document_ref,
             self.proactive_config,
