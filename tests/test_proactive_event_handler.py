@@ -1,12 +1,17 @@
 from __future__ import annotations
+
 import unittest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
 import mockfirestore
-from google.cloud.firestore import Transaction, DocumentReference
 from celery import Celery
+from google.cloud.firestore import DocumentReference, Transaction
 
 import event_handlers.proactive_event_handler as event_handler
+from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
+from config.slack_config import SlackAppConfig
+from utils.proactive_messaging_utils import ProactiveMessagingContext
+
 
 class TestProactiveEventHandler(unittest.TestCase):
     def setUp(self):
@@ -16,23 +21,30 @@ class TestProactiveEventHandler(unittest.TestCase):
         self.mock_document_ref = Mock(spec=DocumentReference)
         self.bot_id = "test_bot_id"
         self.task_id = "test_task_id"
-        self.proactive_config = {"config_key": "config_value"}
+        self.proactive_config = ProactiveMessagingSettings(interval_days=1)
         self.event_data = {
             "id": "test_bot_id",
             "oldValue": {"fields": {"proactive_messaging": {"interval_days": 1}}},
             "newValue": {"fields": {"proactive_messaging": {"interval_days": 2}}}
         }
+        self.app_config = SlackAppConfig()
+        self.app_config.proactive_messaging_settings = self.proactive_config
 
     def test_update_proactive_messaging_settings(self):
         """
         Test the update_proactive_messaging_settings function to ensure it correctly handles Firestore transactions and updates.
         """
+        context = ProactiveMessagingContext(
+            client=None,
+            app_config=self.app_config,
+            bot_user_id=self.bot_id
+        )
+
         event_handler.update_proactive_messaging_settings(
             self.mock_db.transaction(),
             self.mock_celery_app,
+            context,
             self.mock_document_ref,
-            self.proactive_config,
-            self.bot_id
         )
 
         # Check if Firestore transaction is initiated

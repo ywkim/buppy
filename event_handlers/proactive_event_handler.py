@@ -10,6 +10,7 @@ from utils.proactive_messaging_utils import (
     should_reschedule,
 )
 
+
 @firestore.transactional
 def update_proactive_messaging_settings(
     transaction: Transaction,
@@ -26,6 +27,7 @@ def update_proactive_messaging_settings(
         context (ProactiveMessagingContext): Context for proactive messaging.
         bot_ref (firestore.DocumentReference): Reference to the Firestore document for the bot.
     """
+    proactive_config = context.app_config.proactive_messaging_settings
     bot_doc = bot_ref.get(transaction=transaction).to_dict()
     current_task_id = bot_doc.get("current_task_id", None)
 
