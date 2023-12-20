@@ -22,7 +22,9 @@ class ProactiveMessagingContext:
         bot_user_id (str): The user ID of the bot.
     """
 
-    def __init__(self, client: AsyncWebClient, app_config: SlackAppConfig, bot_user_id: str):
+    def __init__(
+        self, client: AsyncWebClient, app_config: SlackAppConfig, bot_user_id: str
+    ):
         self.client = client
         self.app_config = app_config
         self.bot_user_id = bot_user_id
