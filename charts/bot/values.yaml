@@ -4,3 +4,4 @@
 
 env:
   FIREBASE_ENABLED: "true"
+  SENTRY_DSN: "https://bd076219e51a33e0e34453a1b2dc94c7@o4506431811747840.ingest.sentry.io/4506431817056256"
