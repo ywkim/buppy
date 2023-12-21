@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 from abc import ABC, abstractmethod
-from typing import Any
 
 from google.cloud import firestore
 from langchain.chat_models import ChatOpenAI
@@ -15,34 +14,6 @@ from config.settings.langsmith_settings import LangSmithSettings
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 
 MAX_TOKENS = 1023
-
-
-def safely_get_field(
-    document: firestore.DocumentSnapshot,
-    field_path: str,
-    default: (Any | None) = None,
-) -> Any:
-    """
-    Safely retrieves a value from the document snapshot of Firestore using a
-    field path. Returns a default value if the field path
-    does not exist within the document.
-
-    Args:
-        document (DocumentSnapshot): The snapshot of the Firestore document.
-        field_path (str): A dot-delimited path to a field in the Firestore document.
-        default (Optional[Any]): The default value to return if the field doesn't exist.
-
-    Returns:
-        Any: The value retrieved from the document for the field path, if it exists;
-             otherwise, the default value.
-    """
-    try:
-        value = document.get(field_path)
-        if value is None:
-            return default
-        return value
-    except KeyError:
-        return default
 
 
 class AppConfig(ABC):
