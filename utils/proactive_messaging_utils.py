@@ -79,4 +79,4 @@ async def generate_and_send_proactive_message(context: ProactiveMessagingContext
 
     # Send the generated message to the specified Slack channel
     channel = context.app_config.proactive_slack_channel
-    await context.app.client.chat_postMessage(channel=channel, text=message)
+    await context.client.chat_postMessage(channel=channel, text=message)
