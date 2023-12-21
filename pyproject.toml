@@ -16,6 +16,7 @@ streamlit = "^1.28.2"
 apscheduler = "^3.10.4"
 pydantic-settings = "^2.1.0"
 pydantic = "^2.5.2"
+sentry-sdk = "^1.39.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

@@ -10,6 +10,7 @@ from typing import Any
 
 import aiohttp
 import emoji_data_python
+import sentry_sdk
 from aiohttp import ClientError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -32,6 +33,8 @@ ERROR_EMOJI = "bangbang"
 EXCLUDED_EMOJIS = ["eyes", ERROR_EMOJI]
 
 EMOJI_SYSTEM_PROMPT = "사용자의 슬랙 메시지에 대한 반응을 슬랙 Emoji로 표시하세요. 표현하기 어렵다면 :?:를 사용해 주세요."
+
+sentry_sdk.init()
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
