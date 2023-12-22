@@ -1,18 +1,19 @@
 from __future__ import annotations
 
-import os
 import json
-
-from flask import Flask, request
-from cloudevents.http import from_http
-from google.cloud import firestore
+import os
 
 from celery import Celery
+from cloudevents.http import from_http
+from flask import Flask, request
+from google.cloud import firestore
+
 from event_handlers.proactive_event_handler import process_proactive_event
 
 app = Flask(__name__)
 celery_app = Celery("proactive_scheduler", broker=os.environ["CELERY_BROKER_URL"])
 db = firestore.Client()
+
 
 @app.route("/", methods=["POST"])
 def handle_proactive_event():
@@ -23,6 +24,7 @@ def handle_proactive_event():
     process_proactive_event(db, celery_app, event_data)
 
     return "OK", 200
+
 
 if __name__ == "__main__":
     app.run(port=8080, host="0.0.0.0")

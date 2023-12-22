@@ -17,7 +17,7 @@ def execute_proactive_messaging_update(
     bot_ref: firestore.DocumentReference,
     proactive_config: ProactiveMessagingSettings,
     celery_app: Celery,
-    context: ProactiveMessagingContext
+    context: ProactiveMessagingContext,
 ) -> None:
     """
     Handles the logic for updating proactive messaging settings and scheduling tasks.
@@ -34,7 +34,7 @@ def execute_proactive_messaging_update(
 
     next_schedule_time = calculate_next_schedule_time(proactive_config)
     task = celery_app.send_task(
-        'generate_and_send_proactive_message', args=[context], eta=next_schedule_time
+        "generate_and_send_proactive_message", args=[context], eta=next_schedule_time
     )
     try:
         transaction.update(
@@ -49,6 +49,7 @@ def execute_proactive_messaging_update(
         raise e
     finally:
         revoke_existing_tasks(celery_app, current_task_id)
+
 
 @firestore.transactional
 def update_proactive_messaging_settings(
@@ -66,12 +67,17 @@ def update_proactive_messaging_settings(
         context (ProactiveMessagingContext): Context for proactive messaging.
         bot_ref (firestore.DocumentReference): Reference to the Firestore document for the bot.
     """
-    execute_proactive_messaging_update(transaction, bot_ref, context.app_config.proactive_messaging_settings, celery_app, context)
+    execute_proactive_messaging_update(
+        transaction,
+        bot_ref,
+        context.app_config.proactive_messaging_settings,
+        celery_app,
+        context,
+    )
+
 
 def update_task_id_in_firestore(
-    db_client: firestore.Client,
-    bot_id: str,
-    task_id: str
+    db_client: firestore.Client, bot_id: str, task_id: str
 ) -> None:
     """
     Updates the current task ID in Firestore for the given bot.
@@ -83,6 +89,7 @@ def update_task_id_in_firestore(
     """
     bot_ref = db_client.collection("Bots").document(bot_id)
     bot_ref.update({"proactive_messaging.current_task_id": task_id})
+
 
 def revoke_existing_tasks(celery_app: Celery, task_id: str) -> None:
     """
@@ -97,9 +104,7 @@ def revoke_existing_tasks(celery_app: Celery, task_id: str) -> None:
 
 
 def process_proactive_event(
-    db: firestore.Client,
-    celery_app: Celery,
-    event_data: dict
+    db: firestore.Client, celery_app: Celery, event_data: dict
 ) -> None:
     """
     Processes proactive messaging events.
@@ -119,4 +124,6 @@ def process_proactive_event(
             event_data["oldValue"]["fields"]["proactive_messaging"], proactive_config
         ):
             transaction = firestore.Client().transaction()
-            update_proactive_messaging_settings(transaction, celery_app, bot_ref, proactive_config, bot_id)
+            update_proactive_messaging_settings(
+                transaction, celery_app, bot_ref, proactive_config, bot_id
+            )

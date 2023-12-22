@@ -30,9 +30,7 @@ class TestProactiveEventHandler(unittest.TestCase):
         """
         client = AsyncWebClient()
         context = ProactiveMessagingContext(
-            client=client,
-            app_config=self.app_config,
-            bot_user_id=self.bot_id
+            client=client, app_config=self.app_config, bot_user_id=self.bot_id
         )
 
         event_handler.execute_proactive_messaging_update(
@@ -41,7 +39,6 @@ class TestProactiveEventHandler(unittest.TestCase):
             context.app_config.proactive_messaging_settings,
             self.mock_celery_app,
             context,
-
         )
 
         # Fetch updated document and validate changes
@@ -62,8 +59,11 @@ class TestProactiveEventHandler(unittest.TestCase):
         )
 
         updated_doc = bot_ref.get()
-        self.assertEqual(updated_doc.to_dict()["proactive_messaging"]["current_task_id"],
-                         self.task_id)
+        self.assertEqual(
+            updated_doc.to_dict()["proactive_messaging"]["current_task_id"],
+            self.task_id,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
