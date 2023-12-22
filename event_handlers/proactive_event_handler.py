@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import logging
+from typing import Any
 
 from celery import Celery
 from cloudevents.http import CloudEvent
@@ -14,6 +16,7 @@ from config.slack_config import SlackAppConfig
 from utils.proactive_messaging_utils import (
     ProactiveMessagingContext,
     calculate_next_schedule_time,
+    generate_and_send_proactive_message,
     should_reschedule,
 )
 
@@ -39,9 +42,8 @@ def execute_proactive_messaging_update(
     current_task_id = bot_doc.get("current_task_id", None)
 
     next_schedule_time = calculate_next_schedule_time(proactive_config)
-    task = celery_app.send_task(
-        "generate_and_send_proactive_message", args=[context], eta=next_schedule_time
-    )
+    task_function = create_proactive_message_task(celery_app)
+    task = task_function.apply_async(args=[context], eta=next_schedule_time)
     try:
         transaction.update(
             bot_ref,
@@ -55,6 +57,31 @@ def execute_proactive_messaging_update(
         raise e
     finally:
         revoke_existing_tasks(celery_app, current_task_id)
+
+
+def create_proactive_message_task(celery_app: Celery) -> Any:
+    """
+    Registers a Celery task for sending proactive messages using the given Celery app.
+
+    Args:
+        celery_app (Celery): The Celery application instance to register the task with.
+
+    Returns:
+        The Celery task function.
+    """
+
+    @celery_app.task(name="schedule_proactive_message")
+    def schedule_proactive_message(context: ProactiveMessagingContext) -> None:
+        """
+        Synchronous wrapper for the asynchronous 'generate_and_send_proactive_message' function.
+        This function is registered as a Celery task to handle the asynchronous operation.
+
+        Args:
+            context (ProactiveMessagingContext): Context containing app, app_config, and bot_user_id.
+        """
+        asyncio.run(generate_and_send_proactive_message(context))
+
+    return schedule_proactive_message
 
 
 @firestore.transactional
