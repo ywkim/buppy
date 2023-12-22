@@ -3,8 +3,10 @@ from __future__ import annotations
 from celery import Celery
 from google.cloud import firestore
 from google.cloud.firestore import Transaction
+from slack_sdk.web.async_client import AsyncWebClient
 
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
+from config.slack_config import SlackAppConfig
 from utils.proactive_messaging_utils import (
     ProactiveMessagingContext,
     calculate_next_schedule_time,
@@ -124,6 +126,10 @@ def process_proactive_event(
             event_data["oldValue"]["fields"]["proactive_messaging"], proactive_config
         ):
             transaction = db.transaction()
+            app_config = SlackAppConfig()
+            app_config.load_config_from_firebase_sync(db, bot_id)
+            client = AsyncWebClient(token=app_config.bot_token)
+            context = ProactiveMessagingContext(client, app_config, bot_id)
             update_proactive_messaging_settings(
-                transaction, celery_app, bot_ref, proactive_config, bot_id
+                transaction, celery_app, context, bot_ref
             )

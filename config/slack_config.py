@@ -4,6 +4,7 @@ import logging
 import os
 
 from google.cloud import firestore
+from google.cloud.firestore import Client as FirestoreClient
 
 from config.app_config import AppConfig
 from config.loaders.firebase_loader import load_settings_from_firestore
@@ -99,6 +100,54 @@ class SlackAppConfig(AppConfig):
         self.api_settings.slack_bot_token = slack_bot_token
         self.api_settings.slack_app_token = slack_app_token
 
+    def _validate_and_apply_tokens(self):
+        # Ensure that the tokens are not None before assignment
+        if self.api_settings.slack_bot_token is not None:
+            self.bot_token = self.api_settings.slack_bot_token
+        else:
+            raise ValueError("Slack bot token is missing in API settings.")
+
+        if self.api_settings.slack_app_token is not None:
+            self.app_token = self.api_settings.slack_app_token
+        else:
+            raise ValueError("Slack app token is missing in API settings.")
+
+    def load_config_from_firebase_sync(
+        self, db: FirestoreClient, bot_user_id: str
+    ) -> None:
+        """
+        Synchronously load configuration from Firebase Firestore.
+
+        Args:
+            db (FirestoreClient): The Firestore client for sync operations.
+            bot_user_id (str): The unique identifier for the bot.
+        """
+        bot_ref = db.collection("Bots").document(bot_user_id)
+        bot = bot_ref.get()
+        if not bot.exists:
+            raise FileNotFoundError(
+                f"Bot with ID {bot_user_id} does not exist in Firebase."
+            )
+
+        self._apply_proactive_messaging_settings_from_bot(bot)
+        self._apply_slack_tokens_from_bot(bot)
+
+        self._validate_and_apply_tokens()
+
+        companion_id = bot.get("CompanionId")
+        companion_ref = db.collection("Companions").document(companion_id)
+        companion = companion_ref.get()
+        if not companion.exists:
+            raise FileNotFoundError(
+                f"Companion with ID {companion_id} does not exist in Firebase."
+            )
+
+        self._apply_settings_from_companion(companion)
+
+        logging.info(
+            "Configuration loaded from Firebase Firestore for bot %s", bot_user_id
+        )
+
     async def load_config_from_firebase(self, bot_user_id: str) -> None:
         """
         Load configuration from Firebase Firestore. Uses default values from self.DEFAULT_CONFIG
@@ -119,16 +168,7 @@ class SlackAppConfig(AppConfig):
         self._apply_proactive_messaging_settings_from_bot(bot)
         self._apply_slack_tokens_from_bot(bot)
 
-        # Ensure that the tokens are not None before assignment
-        if self.api_settings.slack_bot_token is not None:
-            self.bot_token = self.api_settings.slack_bot_token
-        else:
-            raise ValueError("Slack bot token is missing in API settings.")
-
-        if self.api_settings.slack_app_token is not None:
-            self.app_token = self.api_settings.slack_app_token
-        else:
-            raise ValueError("Slack app token is missing in API settings.")
+        self._validate_and_apply_tokens()
 
         companion_id = bot.get("CompanionId")
         companion_ref = db.collection("Companions").document(companion_id)
