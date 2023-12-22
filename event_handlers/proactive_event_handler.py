@@ -20,6 +20,10 @@ from utils.proactive_messaging_utils import (
     should_reschedule,
 )
 
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 def execute_proactive_messaging_update(
     transaction: Transaction,
@@ -51,6 +55,9 @@ def execute_proactive_messaging_update(
                 "proactive_messaging.current_task_id": task.id,
                 "proactive_messaging.last_scheduled": next_schedule_time.isoformat(),
             },
+        )
+        logging.info(
+            "Proactive messaging updated for bot %s. Task ID: %s", bot_ref.id, task.id
         )
     except Exception as e:
         celery_app.control.revoke(task.id)
@@ -175,6 +182,7 @@ def process_proactive_event(
         client = AsyncWebClient(token=app_config.bot_token)
         context = ProactiveMessagingContext(client, app_config, bot_id)
         update_proactive_messaging_settings(transaction, celery_app, context, bot_ref)
+    logging.info("Proactive event processed for bot %s", bot_id)
 
 
 def extract_bot_id(document_path: str) -> str:
