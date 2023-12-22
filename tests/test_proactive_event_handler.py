@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 from celery import Celery
 from mockfirestore import MockFirestore
+from slack_sdk.web.async_client import AsyncWebClient
 
 import event_handlers.proactive_event_handler as event_handler
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
@@ -27,8 +28,9 @@ class TestProactiveEventHandler(unittest.TestCase):
         Test the update_proactive_messaging_settings function to ensure it correctly
         handles Firestore transactions and updates.
         """
+        client = AsyncWebClient()
         context = ProactiveMessagingContext(
-            client=None,
+            client=client,
             app_config=self.app_config,
             bot_user_id=self.bot_id
         )
