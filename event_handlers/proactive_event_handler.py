@@ -4,6 +4,7 @@ from celery import Celery
 from google.cloud import firestore
 from google.cloud.firestore import Transaction
 
+from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 from utils.proactive_messaging_utils import (
     ProactiveMessagingContext,
     calculate_next_schedule_time,
@@ -11,24 +12,24 @@ from utils.proactive_messaging_utils import (
 )
 
 
-@firestore.transactional
-def update_proactive_messaging_settings(
+def execute_proactive_messaging_update(
     transaction: Transaction,
-    celery_app: Celery,
-    context: ProactiveMessagingContext,
     bot_ref: firestore.DocumentReference,
+    proactive_config: ProactiveMessagingSettings,
+    celery_app: Celery,
+    context: ProactiveMessagingContext
 ) -> None:
     """
-    Transactionally updates proactive messaging settings in Firestore and schedules a task.
+    Handles the logic for updating proactive messaging settings and scheduling tasks.
 
     Args:
         transaction (Transaction): Firestore transaction.
-        celery_app (Celery): The Celery application instance.
+        bot_ref (DocumentReference): Reference to the Firestore document for the bot.
+        proactive_config (ProactiveMessagingSettings): Proactive messaging configuration.
+        celery_app (Celery): Celery application instance for task scheduling.
         context (ProactiveMessagingContext): Context for proactive messaging.
-        bot_ref (firestore.DocumentReference): Reference to the Firestore document for the bot.
     """
-    proactive_config = context.app_config.proactive_messaging_settings
-    bot_doc = bot_ref.get(transaction=transaction).to_dict()
+    bot_doc = next(transaction.get(bot_ref)).to_dict()
     current_task_id = bot_doc.get("current_task_id", None)
 
     next_schedule_time = calculate_next_schedule_time(proactive_config)
@@ -48,6 +49,24 @@ def update_proactive_messaging_settings(
         raise e
     finally:
         revoke_existing_tasks(celery_app, current_task_id)
+
+@firestore.transactional
+def update_proactive_messaging_settings(
+    transaction: Transaction,
+    celery_app: Celery,
+    context: ProactiveMessagingContext,
+    bot_ref: firestore.DocumentReference,
+) -> None:
+    """
+    Transactionally updates proactive messaging settings in Firestore and schedules a task.
+
+    Args:
+        transaction (Transaction): Firestore transaction.
+        celery_app (Celery): The Celery application instance.
+        context (ProactiveMessagingContext): Context for proactive messaging.
+        bot_ref (firestore.DocumentReference): Reference to the Firestore document for the bot.
+    """
+    execute_proactive_messaging_update(transaction, bot_ref, context.app_config.proactive_messaging_settings, celery_app, context)
 
 def update_task_id_in_firestore(
     db_client: firestore.Client,
