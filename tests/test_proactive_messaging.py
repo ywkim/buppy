@@ -32,8 +32,8 @@ class TestProactiveMessaging(unittest.TestCase):
 
     def test_should_reschedule(self) -> None:
         """Test the should_reschedule function for detecting configuration changes."""
-        old_config = {"interval_days": 1.0}
-        new_config = {"interval_days": 2.0}
+        old_config = ProactiveMessagingSettings(interval_days=1.0)
+        new_config = ProactiveMessagingSettings(interval_days=2.0)
         self.assertTrue(should_reschedule(old_config, new_config))
 
     def test_calculate_next_schedule_time(self) -> None:

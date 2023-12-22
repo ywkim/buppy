@@ -191,17 +191,20 @@ def extract_bot_id(document_path: str) -> str:
     return path_parts[path_parts.index("Bots") + 1]
 
 
-def extract_proactive_config(document: Document) -> dict | None:
+def extract_proactive_config(document: Document) -> ProactiveMessagingSettings | None:
     """
-    Extracts the proactive messaging configuration from Firestore fields.
+    Extracts the proactive messaging configuration from Firestore fields and returns
+    a ProactiveMessagingSettings object.
 
     Args:
         document (Document): Firestore document.
 
     Returns:
-        dict | None: The extracted proactive messaging configuration, or None if not found.
+        ProactiveMessagingSettings | None: The extracted proactive messaging configuration object,
+        or None if not found.
     """
     fields = document.fields
     if "proactive_messaging" in fields:
-        return dict(fields["proactive_messaging"].map_value.fields)
+        config_data = dict(fields["proactive_messaging"].map_value.fields)
+        return ProactiveMessagingSettings(**config_data)
     return None

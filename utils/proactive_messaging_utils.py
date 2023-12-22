@@ -12,19 +12,21 @@ from config.app_config import AppConfig, init_proactive_chat_model
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 
 
-def should_reschedule(old_config: dict[str, Any], new_config: dict[str, Any]) -> bool:
+def should_reschedule(
+    old_settings: ProactiveMessagingSettings, new_settings: ProactiveMessagingSettings
+) -> bool:
     """
     Determines if the interval in proactive messaging settings has changed.
 
     Args:
-        old_config (dict[str, Any]): The old configuration settings.
-        new_config (dict[str, Any]): The new configuration settings.
+        old_settings (ProactiveMessagingSettings): The old settings.
+        new_settings (ProactiveMessagingSettings): The new settings.
 
     Returns:
         bool: True if the interval settings have changed, False otherwise.
     """
-    old_interval = old_config.get("interval_days")
-    new_interval = new_config.get("interval_days")
+    old_interval = old_settings.interval_days
+    new_interval = new_settings.interval_days
 
     return old_interval != new_interval
 
