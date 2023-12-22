@@ -20,8 +20,8 @@ def handle_proactive_event():
     """
     Handles proactive messaging events triggered by Firestore document changes.
     """
-    event_data = from_http(request.headers, request.get_data(), json.loads).data
-    process_proactive_event(db, celery_app, event_data)
+    event = from_http(request.headers, request.get_data(), json.loads)
+    process_proactive_event(db, celery_app, event)
 
     return "OK", 200
 

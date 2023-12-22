@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import logging
+
 from celery import Celery
+from cloudevents.http import CloudEvent
 from google.cloud import firestore
 from google.cloud.firestore import Transaction
+from google.events.cloud.firestore import Document, DocumentEventData
 from slack_sdk.web.async_client import AsyncWebClient
 
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
@@ -106,30 +110,71 @@ def revoke_existing_tasks(celery_app: Celery, task_id: str) -> None:
 
 
 def process_proactive_event(
-    db: firestore.Client, celery_app: Celery, event_data: dict
+    db: firestore.Client, celery_app: Celery, cloud_event: CloudEvent
 ) -> None:
     """
-    Processes proactive messaging events.
+    Processes a proactive messaging event triggered by Firestore document changes.
 
     Args:
         db (firestore.Client): Firestore client for database operations.
-        celery_app (Celery): Celery application instance for task scheduling.
-        event_data (dict): Parsed data from the proactive event.
-    """
-    bot_id = event_data["id"]
-    bot_ref = db.collection("Bots").document(bot_id)
-    bot_doc = bot_ref.get().to_dict()
+        celery_app (CeleryApp): Celery application instance for task scheduling.
+        cloud_event (CloudEvent): The CloudEvent data representing the Firestore event.
 
-    if "proactive_messaging" in bot_doc:
-        proactive_config = bot_doc["proactive_messaging"]
-        if should_reschedule(
-            event_data["oldValue"]["fields"]["proactive_messaging"], proactive_config
-        ):
-            transaction = db.transaction()
-            app_config = SlackAppConfig()
-            app_config.load_config_from_firebase_sync(db, bot_id)
-            client = AsyncWebClient(token=app_config.bot_token)
-            context = ProactiveMessagingContext(client, app_config, bot_id)
-            update_proactive_messaging_settings(
-                transaction, celery_app, context, bot_ref
-            )
+    This function processes Firestore document changes, checks proactive messaging
+    configurations, and schedules tasks accordingly using Celery.
+    """
+    firestore_payload = DocumentEventData()
+    firestore_payload._pb.ParseFromString(cloud_event.data)
+
+    bot_id = extract_bot_id(firestore_payload.value.name)
+    bot_ref = db.collection("Bots").document(bot_id)
+    bot_doc = bot_ref.get()
+
+    if not bot_doc.exists:
+        logging.error("Bot document with ID %s does not exist.", bot_id)
+        return
+
+    proactive_config_current = extract_proactive_config(firestore_payload.value)
+    proactive_config_old = extract_proactive_config(firestore_payload.old_value)
+
+    if proactive_config_current is None or proactive_config_old is None:
+        logging.warning("Proactive messaging settings not found in CloudEvent payload.")
+        return
+
+    if should_reschedule(proactive_config_old, proactive_config_current):
+        transaction = db.transaction()
+        app_config = SlackAppConfig()
+        app_config.load_config_from_firebase_sync(db, bot_id)
+        client = AsyncWebClient(token=app_config.bot_token)
+        context = ProactiveMessagingContext(client, app_config, bot_id)
+        update_proactive_messaging_settings(transaction, celery_app, context, bot_ref)
+
+
+def extract_bot_id(document_path: str) -> str:
+    """
+    Extracts the bot ID from the Firestore document path.
+
+    Args:
+        document_path (str): The Firestore document path.
+
+    Returns:
+        str: The extracted bot ID.
+    """
+    path_parts = document_path.split("/")
+    return path_parts[path_parts.index("Bots") + 1]
+
+
+def extract_proactive_config(document: Document) -> dict | None:
+    """
+    Extracts the proactive messaging configuration from Firestore fields.
+
+    Args:
+        document (Document): Firestore document.
+
+    Returns:
+        dict | None: The extracted proactive messaging configuration, or None if not found.
+    """
+    fields = document.fields
+    if "proactive_messaging" in fields:
+        return dict(fields["proactive_messaging"].map_value.fields)
+    return None
