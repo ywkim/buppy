@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import random
 from datetime import datetime, timedelta
-from typing import Any
 
 from langchain.schema import SystemMessage
 from slack_sdk import WebClient
