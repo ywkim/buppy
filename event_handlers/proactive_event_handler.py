@@ -123,7 +123,7 @@ def process_proactive_event(
         if should_reschedule(
             event_data["oldValue"]["fields"]["proactive_messaging"], proactive_config
         ):
-            transaction = firestore.Client().transaction()
+            transaction = db.transaction()
             update_proactive_messaging_settings(
                 transaction, celery_app, bot_ref, proactive_config, bot_id
             )
