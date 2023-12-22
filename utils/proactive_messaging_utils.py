@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from langchain.schema import SystemMessage
-from slack_bolt.async_app import AsyncApp
+from slack_sdk.web.async_client import AsyncWebClient
 
 from config.app_config import init_proactive_chat_model
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
@@ -17,13 +17,15 @@ class ProactiveMessagingContext:
     Represents the context for proactive messaging.
 
     Attributes:
-        app (AsyncApp): The Slack app instance.
+        client (AsyncWebClient): The Slack client instance.
         app_config (SlackAppConfig): The application configuration.
         bot_user_id (str): The user ID of the bot.
     """
 
-    def __init__(self, app: AsyncApp, app_config: SlackAppConfig, bot_user_id: str):
-        self.app = app
+    def __init__(
+        self, client: AsyncWebClient, app_config: SlackAppConfig, bot_user_id: str
+    ):
+        self.client = client
         self.app_config = app_config
         self.bot_user_id = bot_user_id
 
@@ -77,4 +79,4 @@ async def generate_and_send_proactive_message(context: ProactiveMessagingContext
 
     # Send the generated message to the specified Slack channel
     channel = context.app_config.proactive_slack_channel
-    await context.app.client.chat_postMessage(channel=channel, text=message)
+    await context.client.chat_postMessage(channel=channel, text=message)

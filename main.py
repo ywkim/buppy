@@ -440,7 +440,7 @@ async def main():
 
     if app_config.proactive_messaging_enabled and not app_config.firebase_enabled:
         scheduler = AsyncIOScheduler()
-        context = ProactiveMessagingContext(app, app_config, bot_user_id)
+        context = ProactiveMessagingContext(app.client, app_config, bot_user_id)
         await schedule_next_proactive_message(context, scheduler)
         scheduler.start()
         logging.info("Proactive messaging has been scheduled.")
