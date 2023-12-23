@@ -9,7 +9,7 @@ from slack_sdk.web.async_client import AsyncWebClient
 
 from config.app_config import init_proactive_chat_model
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
-from config.slack_config import SlackAppConfig
+from config.app_config import AppConfig
 
 
 class ProactiveMessagingContext:
@@ -18,12 +18,12 @@ class ProactiveMessagingContext:
 
     Attributes:
         client (AsyncWebClient): The Slack client instance.
-        app_config (SlackAppConfig): The application configuration.
+        app_config (AppConfig): The application configuration.
         bot_user_id (str): The user ID of the bot.
     """
 
     def __init__(
-        self, client: AsyncWebClient, app_config: SlackAppConfig, bot_user_id: str
+        self, client: AsyncWebClient, app_config: AppConfig, bot_user_id: str
     ):
         self.client = client
         self.app_config = app_config
