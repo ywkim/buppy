@@ -7,13 +7,13 @@ from celery import Celery
 from mockfirestore import MockFirestore
 from slack_sdk.web.async_client import AsyncWebClient
 
-import event_handlers.proactive_event_handler as event_handler
+import celery_tasks.proactive_messaging_task as messaging_task
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 from config.slack_config import SlackAppConfig
 from utils.proactive_messaging_utils import ProactiveMessagingContext
 
 
-class TestProactiveEventHandler(unittest.TestCase):
+class TestProactiveMessagingTask(unittest.TestCase):
     def setUp(self):
         self.mock_db = MockFirestore()
         self.mock_celery_app = Mock(spec=Celery)
@@ -22,23 +22,22 @@ class TestProactiveEventHandler(unittest.TestCase):
         self.proactive_config = ProactiveMessagingSettings(interval_days=1)
         self.app_config = SlackAppConfig()
         self.app_config.proactive_messaging_settings = self.proactive_config
+        self.bot_ref = self.mock_db.collection("Bots").document(self.bot_id)
+        self.bot_ref.set({"proactive_messaging": {}})
 
-    def test_update_proactive_messaging_settings(self):
+    def test_schedule_proactive_message(self):
         """
-        Test the update_proactive_messaging_settings function to ensure it correctly
-        handles Firestore transactions and updates.
+        Test the schedule_proactive_message function to ensure it calls the update_proactive_messaging_settings function with correct parameters.
         """
         client = AsyncWebClient()
         context = ProactiveMessagingContext(
             client=client, app_config=self.app_config, bot_user_id=self.bot_id
         )
 
-        event_handler.execute_proactive_messaging_update(
-            self.mock_db.transaction(),
-            self.mock_db.collection("Bots").document(self.bot_id),
-            context.app_config.proactive_messaging_settings,
-            self.mock_celery_app,
+        messaging_task.schedule_proactive_message_task(
             context,
+            self.mock_celery_app,
+            self.mock_db,
         )
 
         # Fetch updated document and validate changes
@@ -50,15 +49,13 @@ class TestProactiveEventHandler(unittest.TestCase):
         Test the update_task_in_firestore function to ensure it correctly updates
         the task ID in Firestore.
         """
-        bot_ref = self.mock_db.collection("Bots").document(self.bot_id)
-        bot_ref.set({"proactive_messaging": {}})  # Initialize document
 
         # Call the function under test
-        event_handler.update_task_in_firestore(
+        messaging_task.update_task_in_firestore(
             self.mock_db, self.bot_id, self.task_id, None
         )
 
-        updated_doc = bot_ref.get()
+        updated_doc = self.bot_ref.get()
         self.assertEqual(
             updated_doc.to_dict()["proactive_messaging"]["current_task_id"],
             self.task_id,
