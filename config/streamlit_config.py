@@ -1,7 +1,7 @@
 from __future__ import annotations
-from enum import Enum
-from google.cloud import firestore
+
 import logging
+from enum import Enum
 
 import streamlit as st
 from google.cloud import firestore
@@ -19,6 +19,7 @@ from config.settings.proactive_messaging_settings import ProactiveMessagingSetti
 class EntityType(Enum):
     BOT = "bot"
     COMPANION = "companion"
+
 
 class StreamlitAppConfig(AppConfig):
     """Manages application configuration for the Streamlit web chatbot."""
@@ -40,7 +41,7 @@ class StreamlitAppConfig(AppConfig):
         )
         logging.info("Configuration loaded from Streamlit secrets")
 
-    def _initialize_default_firestore_client(self) -> firestore.Client:
+    def initialize_firestore_client(self) -> firestore.Client:
         """
         Initializes a default Firestore client using Streamlit secrets or default credentials.
 
@@ -65,9 +66,10 @@ class StreamlitAppConfig(AppConfig):
         return firestore.Client(credentials=credentials, project=project_id)
 
     def load_config_from_firebase(
-        self, entity_id: str,
+        self,
+        entity_id: str,
         entity_type: EntityType = EntityType.BOT,
-        db: firestore.Client | None = None
+        db: firestore.Client | None = None,
     ) -> None:
         """
         Load configuration from Firestore for a given entity (bot or companion).
@@ -84,7 +86,7 @@ class StreamlitAppConfig(AppConfig):
             FileNotFoundError: If the entity document does not exist in Firestore.
         """
         if db is None:
-            db = self._initialize_default_firestore_client()
+            db = self.initialize_firestore_client()
 
         collection_name = "Bots" if entity_type == EntityType.BOT else "Companions"
         entity_ref = db.collection(collection_name).document(entity_id)
@@ -115,7 +117,9 @@ class StreamlitAppConfig(AppConfig):
             self._apply_settings_from_companion(entity)
 
         logging.info(
-            "Configuration loaded from Firestore for %s %s", entity_type.value, entity_id
+            "Configuration loaded from Firestore for %s %s",
+            entity_type.value,
+            entity_id,
         )
 
     def load_config(self) -> None:
