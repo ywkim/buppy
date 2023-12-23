@@ -47,7 +47,7 @@ def execute_proactive_messaging_update(
     current_task_id = bot_doc.get("current_task_id", None)
 
     next_schedule_time = calculate_next_schedule_time(proactive_config)
-    task_function = create_proactive_message_task(celery_app)
+    task_function = create_proactive_message_task(celery_app, None)
     task = task_function.apply_async(args=[context], eta=next_schedule_time)
     try:
         transaction.update(

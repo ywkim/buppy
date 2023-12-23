@@ -45,17 +45,17 @@ class TestProactiveEventHandler(unittest.TestCase):
         updated_doc = self.mock_db.collection("Bots").document(self.bot_id).get()
         self.assertIsNotNone(updated_doc.to_dict())
 
-    def test_update_task_id_in_firestore(self):
+    def test_update_task_in_firestore(self):
         """
-        Test the update_task_id_in_firestore function to ensure it correctly updates
+        Test the update_task_in_firestore function to ensure it correctly updates
         the task ID in Firestore.
         """
         bot_ref = self.mock_db.collection("Bots").document(self.bot_id)
         bot_ref.set({"proactive_messaging": {}})  # Initialize document
 
         # Call the function under test
-        event_handler.update_task_id_in_firestore(
-            self.mock_db, self.bot_id, self.task_id
+        event_handler.update_task_in_firestore(
+            self.mock_db, self.bot_id, self.task_id, None
         )
 
         updated_doc = bot_ref.get()
