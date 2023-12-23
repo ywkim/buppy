@@ -7,9 +7,8 @@ from typing import Any
 from langchain.schema import SystemMessage
 from slack_sdk.web.async_client import AsyncWebClient
 
-from config.app_config import init_proactive_chat_model
+from config.app_config import AppConfig, init_proactive_chat_model
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
-from config.app_config import AppConfig
 
 
 class ProactiveMessagingContext:
@@ -22,9 +21,7 @@ class ProactiveMessagingContext:
         bot_user_id (str): The user ID of the bot.
     """
 
-    def __init__(
-        self, client: AsyncWebClient, app_config: AppConfig, bot_user_id: str
-    ):
+    def __init__(self, client: AsyncWebClient, app_config: AppConfig, bot_user_id: str):
         self.client = client
         self.app_config = app_config
         self.bot_user_id = bot_user_id
