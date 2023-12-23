@@ -75,7 +75,7 @@ def handle_chat_interaction(app_config: StreamlitAppConfig) -> None:
             # If Firebase is enabled, override the config with the one from Firebase
             if app_config.firebase_enabled:
                 companion_id = st.session_state.companion_id
-                app_config.load_config_from_firebase(companion_id)
+                app_config.load_config_from_firebase(companion_id, EntityType.COMPANION)
                 logging.info("Override configuration with Firebase settings")
 
             # Format messages for chat model processing
@@ -177,7 +177,7 @@ def main():
         ):
             st.session_state.companion_id = companion_id
             st.session_state.thread_messages = []
-        app_config.load_config_from_firebase(companion_id)
+        app_config.load_config_from_firebase(companion_id, EntityType.COMPANION)
         logging.info("Override configuration with Firebase settings")
 
     # Display chat interface

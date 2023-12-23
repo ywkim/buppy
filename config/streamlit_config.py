@@ -1,3 +1,6 @@
+from __future__ import annotations
+from enum import Enum
+from google.cloud import firestore
 import logging
 
 import streamlit as st
@@ -12,6 +15,10 @@ from config.settings.firebase_settings import FirebaseSettings
 from config.settings.langsmith_settings import LangSmithSettings
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 
+
+class EntityType(Enum):
+    BOT = "bot"
+    COMPANION = "companion"
 
 class StreamlitAppConfig(AppConfig):
     """Manages application configuration for the Streamlit web chatbot."""
@@ -33,20 +40,18 @@ class StreamlitAppConfig(AppConfig):
         )
         logging.info("Configuration loaded from Streamlit secrets")
 
-    def _initialize_firebase_client(self) -> firestore.Client:
+    def _initialize_default_firestore_client(self) -> firestore.Client:
         """
-        Initializes and returns a Firebase Firestore client using the service account details from Streamlit secrets.
+        Initializes a default Firestore client using Streamlit secrets or default credentials.
 
         Returns:
-            firestore.Client: The initialized Firestore client.
-
-        Raises:
-            ValueError: If the required service account details are not provided in Streamlit secrets.
+            firestore.Client: Initialized Firestore client.
         """
         service_account_info = st.secrets.get("firebase_service_account")
         if not service_account_info:
             logging.info(
-                "Firebase service account details not found in Streamlit secrets. Using default credentials."
+                "Firebase service account details not found in Streamlit secrets. "
+                "Using default credentials."
             )
             return firestore.Client()
 
@@ -54,31 +59,64 @@ class StreamlitAppConfig(AppConfig):
         credentials = service_account.Credentials.from_service_account_info(
             service_account_info
         )
-
         project_id = service_account_info["project_id"]
 
         # Initialize and return the Firestore client with the credentials
         return firestore.Client(credentials=credentials, project=project_id)
 
-    def load_config_from_firebase(self, companion_id: str) -> None:
+    def load_config_from_firebase(
+        self, entity_id: str,
+        entity_type: EntityType = EntityType.BOT,
+        db: firestore.Client | None = None
+    ) -> None:
         """
-        Load configuration from Firebase Firestore using the provided companion ID.
+        Load configuration from Firestore for a given entity (bot or companion).
+        Defaults to loading bot configuration and uses a default Firestore client
+        if not provided.
 
         Args:
-            companion_id (str): The unique identifier for the companion.
+            entity_id (str): Unique identifier for the entity.
+            entity_type (EntityType): Type of the entity (BOT or COMPANION). Defaults to BOT.
+            db (firestore.Client | None): Firestore client for database operations.
+                                          If None, a default client is initialized.
 
         Raises:
-            FileNotFoundError: If the companion document does not exist in Firebase.
+            FileNotFoundError: If the entity document does not exist in Firestore.
         """
-        db = self._initialize_firebase_client()
-        companion_ref = db.collection("Companions").document(companion_id)
-        companion = companion_ref.get()
-        if not companion.exists:
+        if db is None:
+            db = self._initialize_default_firestore_client()
+
+        collection_name = "Bots" if entity_type == EntityType.BOT else "Companions"
+        entity_ref = db.collection(collection_name).document(entity_id)
+        entity = entity_ref.get()
+
+        if not entity.exists:
             raise FileNotFoundError(
-                f"Companion with ID {companion_id} does not exist in Firebase."
+                f"{entity_type.value.capitalize()} with ID {entity_id} does not exist in Firestore."
             )
 
-        self._apply_settings_from_companion(companion)
+        if entity_type == EntityType.BOT:
+            self._apply_proactive_messaging_settings_from_bot(entity)
+            self._apply_slack_tokens_from_bot(entity)
+
+            self._validate_and_apply_tokens()
+
+            companion_id = entity.get("CompanionId")
+            companion_ref = db.collection("Companions").document(companion_id)
+            companion = companion_ref.get()
+            if not companion.exists:
+                raise FileNotFoundError(
+                    f"Companion with ID {companion_id} does not exist in Firestore."
+                )
+
+            self._apply_settings_from_companion(companion)
+
+        elif entity_type == EntityType.COMPANION:
+            self._apply_settings_from_companion(entity)
+
+        logging.info(
+            "Configuration loaded from Firestore for %s %s", entity_type.value, entity_id
+        )
 
     def load_config(self) -> None:
         """Load configuration from Streamlit secrets."""

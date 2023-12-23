@@ -136,7 +136,7 @@ def process_proactive_event(
     if should_reschedule(proactive_config_old, proactive_config_current):
         transaction = db.transaction()
         app_config = SlackAppConfig()
-        app_config.load_config_from_firebase_sync(db, bot_id)
+        app_config.load_config_from_firebase(bot_id, db=db)
         client = AsyncWebClient(token=app_config.bot_token)
         context = ProactiveMessagingContext(client, app_config, bot_id)
         update_proactive_messaging_settings(transaction, celery_app, context, bot_ref)
