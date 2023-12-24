@@ -24,7 +24,6 @@ from config.slack_config import SlackAppConfig
 from utils.logging_utils import create_log_message
 from utils.message_utils import prepare_chat_messages
 from utils.proactive_messaging_utils import (
-    ProactiveMessagingContext,
     calculate_next_schedule_time,
     generate_and_send_proactive_message,
 )
@@ -42,7 +41,10 @@ logging.basicConfig(
 
 
 async def schedule_next_proactive_message(
-    context: ProactiveMessagingContext, scheduler: AsyncIOScheduler
+    client: AsyncWebClient,
+    app_config: SlackAppConfig,
+    bot_user_id: str,
+    scheduler: AsyncIOScheduler,
 ):
     """
     Schedules the next proactive message.
@@ -51,19 +53,22 @@ async def schedule_next_proactive_message(
     interval setting and schedules the message accordingly.
     """
     next_schedule_time = calculate_next_schedule_time(
-        context.app_config.proactive_messaging_settings
+        app_config.proactive_messaging_settings
     )
     scheduler.add_job(
         send_proactive_message,
         "date",
         run_date=next_schedule_time,
-        args=[context, scheduler],
+        args=[client, app_config, bot_user_id, scheduler],
     )
     logging.info("Next proactive message scheduled for: %s", next_schedule_time)
 
 
 async def send_proactive_message(
-    context: ProactiveMessagingContext, scheduler: AsyncIOScheduler
+    client: AsyncWebClient,
+    app_config: SlackAppConfig,
+    bot_user_id: str,
+    scheduler: AsyncIOScheduler,
 ):
     """
     Sends a proactive message to the specified Slack channel.
@@ -72,13 +77,13 @@ async def send_proactive_message(
     system prompt configured in the app settings. It then sends the generated message
     to the specified Slack channel and schedules the next proactive message.
     """
-    if context.app_config.firebase_enabled:
-        await context.app_config.load_config_from_firebase(context.bot_user_id)
+    if app_config.firebase_enabled:
+        await app_config.load_config_from_firebase(bot_user_id)
         logging.info("Configuration updated from Firebase Firestore.")
 
-    await generate_and_send_proactive_message(context)
+    await generate_and_send_proactive_message(client, app_config, bot_user_id)
 
-    channel = context.app_config.proactive_slack_channel
+    channel = app_config.proactive_slack_channel
     logging.info(
         create_log_message(
             "Proactive message sent to channel",
@@ -440,8 +445,9 @@ async def main():
 
     if app_config.proactive_messaging_enabled and not app_config.firebase_enabled:
         scheduler = AsyncIOScheduler()
-        context = ProactiveMessagingContext(app.client, app_config, bot_user_id)
-        await schedule_next_proactive_message(context, scheduler)
+        await schedule_next_proactive_message(
+            app.client, app_config, bot_user_id, scheduler
+        )
         scheduler.start()
         logging.info("Proactive messaging has been scheduled.")
 

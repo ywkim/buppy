@@ -11,22 +11,6 @@ from config.app_config import AppConfig, init_proactive_chat_model
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 
 
-class ProactiveMessagingContext:
-    """
-    Represents the context for proactive messaging.
-
-    Attributes:
-        client (AsyncWebClient): The Slack client instance.
-        app_config (AppConfig): The application configuration.
-        bot_user_id (str): The user ID of the bot.
-    """
-
-    def __init__(self, client: AsyncWebClient, app_config: AppConfig, bot_user_id: str):
-        self.client = client
-        self.app_config = app_config
-        self.bot_user_id = bot_user_id
-
-
 def should_reschedule(old_config: dict[str, Any], new_config: dict[str, Any]) -> bool:
     """
     Determines if the interval in proactive messaging settings has changed.
@@ -60,20 +44,24 @@ def calculate_next_schedule_time(settings: ProactiveMessagingSettings) -> dateti
     return datetime.now() + timedelta(days=interval_days * random.random() * 2)
 
 
-async def generate_and_send_proactive_message(context: ProactiveMessagingContext):
+async def generate_and_send_proactive_message(
+    client: AsyncWebClient, app_config: AppConfig, bot_user_id: str
+):
     """
     Generates a proactive message using the chat model based on the system prompt
     and sends the generated message to the specified Slack channel.
 
     Args:
-        context (ProactiveMessagingContext): Context containing app, app_config, and bot_user_id.
+        client (AsyncWebClient): The Slack client instance.
+        app_config (AppConfig): The application configuration.
+        bot_user_id (str): The user ID of the bot.
     """
     # Initialize chat model and generate message
-    chat = init_proactive_chat_model(context.app_config)
-    system_prompt = SystemMessage(content=context.app_config.proactive_system_prompt)
+    chat = init_proactive_chat_model(app_config)
+    system_prompt = SystemMessage(content=app_config.proactive_system_prompt)
     resp = await chat.agenerate([[system_prompt]])
     message = resp.generations[0][0].text
 
     # Send the generated message to the specified Slack channel
-    channel = context.app_config.proactive_slack_channel
-    await context.client.chat_postMessage(channel=channel, text=message)
+    channel = app_config.proactive_slack_channel
+    await client.chat_postMessage(channel=channel, text=message)
