@@ -7,14 +7,13 @@ from io import StringIO
 from typing import Any
 
 import streamlit as st
-from slack_sdk.web.async_client import AsyncWebClient
+from slack_sdk import WebClient
 
-from celery_tasks import (
+from celery_tasks.proactive_messaging_task import (
     cancel_current_proactive_message_task,
     schedule_proactive_message_task,
 )
 from config.streamlit_config import StreamlitAppConfig
-from utils.proactive_messaging_utils import ProactiveMessagingContext
 
 
 class EntityType(Enum):
@@ -94,7 +93,7 @@ class StreamlitAdminApp:
         entities = entity_ref.stream()
         return [entity.id for entity in entities]
 
-    def get_proactive_messaging_context(self, bot_id: str) -> ProactiveMessagingContext:
+    def get_slack_client(self, bot_id: str) -> WebClient:
         """
         Creates a ProactiveMessagingContext for the specified bot.
 
@@ -105,8 +104,8 @@ class StreamlitAdminApp:
             ProactiveMessagingContext: The context object for proactive messaging.
         """
         self.app_config.load_config_from_firebase(bot_id, db=self.db)
-        client = AsyncWebClient(token=self.app_config.bot_token)
-        return ProactiveMessagingContext(client, self.app_config, bot_id)
+        client = WebClient(token=self.app_config.bot_token)
+        return client
 
 def load_prefix_messages_from_csv(csv_content: str) -> list[dict[str, str]]:
     """
@@ -194,7 +193,7 @@ def proactive_task_panel(admin_app: StreamlitAdminApp, proactive_settings, bot_i
         st.text(f"Scheduled Time: {scheduled_time}")
         if st.button("Cancel Current Task"):
             cancel_current_proactive_message_task(
-                admin_app.get_proactive_messaging_context(bot_id),
+                bot_id,
                 admin_app.celery_app,
                 admin_app.db
             )
@@ -203,7 +202,9 @@ def proactive_task_panel(admin_app: StreamlitAdminApp, proactive_settings, bot_i
         st.write("No task currently scheduled.")
         if st.button("Schedule New Task"):
             schedule_proactive_message_task(
-                admin_app.get_proactive_messaging_context(bot_id),
+                admin_app.get_slack_client(bot_id),
+                admin_app.app_config,
+                bot_id,
                 admin_app.celery_app,
                 admin_app.db
             )
