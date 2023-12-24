@@ -10,6 +10,7 @@ from langchain.chat_models import ChatOpenAI
 
 from config.loaders.firebase_loader import load_settings_from_firestore
 from config.settings.api_settings import APISettings
+from config.settings.celery_settings import CelerySettings
 from config.settings.core_settings import CoreSettings
 from config.settings.firebase_settings import FirebaseSettings
 from config.settings.langsmith_settings import LangSmithSettings
@@ -34,6 +35,7 @@ class AppConfig(ABC):
         self.firebase_settings = FirebaseSettings()
         self.langsmith_settings = LangSmithSettings()
         self.proactive_messaging_settings = ProactiveMessagingSettings()
+        self.celery_settings = CelerySettings()
 
     @property
     def vision_enabled(self) -> bool:

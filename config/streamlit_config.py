@@ -4,12 +4,14 @@ import logging
 from enum import Enum
 
 import streamlit as st
+from celery import Celery
 from google.cloud import firestore
 from google.oauth2 import service_account
 
 from config.app_config import AppConfig
 from config.loaders.streamlit_loader import load_settings_from_streamlit_secrets
 from config.settings.api_settings import APISettings
+from config.settings.celery_settings import CelerySettings
 from config.settings.core_settings import CoreSettings
 from config.settings.firebase_settings import FirebaseSettings
 from config.settings.langsmith_settings import LangSmithSettings
@@ -39,6 +41,9 @@ class StreamlitAppConfig(AppConfig):
         self.proactive_messaging_settings = load_settings_from_streamlit_secrets(
             ProactiveMessagingSettings, "proactive_messaging"
         )
+        self.celery_settings = load_settings_from_streamlit_secrets(
+            CelerySettings, "celery"
+        )
         logging.info("Configuration loaded from Streamlit secrets")
 
     def initialize_firestore_client(self) -> firestore.Client:
@@ -64,6 +69,15 @@ class StreamlitAppConfig(AppConfig):
 
         # Initialize and return the Firestore client with the credentials
         return firestore.Client(credentials=credentials, project=project_id)
+
+    def initialize_celery_app(self):
+        """Initializes Celery app with loaded configuration."""
+        if self.celery_settings.broker_url:
+            return Celery(
+                'streamlit_admin_app',
+                broker=self.celery_settings.broker_url,
+            )
+        return None
 
     def load_config_from_firebase(
         self,

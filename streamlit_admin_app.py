@@ -7,8 +7,14 @@ from io import StringIO
 from typing import Any
 
 import streamlit as st
+from slack_sdk.web.async_client import AsyncWebClient
 
+from celery_tasks import (
+    cancel_current_proactive_message_task,
+    schedule_proactive_message_task,
+)
 from config.streamlit_config import StreamlitAppConfig
+from utils.proactive_messaging_utils import ProactiveMessagingContext
 
 
 class EntityType(Enum):
@@ -33,6 +39,8 @@ class StreamlitAdminApp:
         self.app_config = StreamlitAppConfig()
         self.app_config.load_config()
         self.db = self.app_config.initialize_firestore_client()
+        self.celery_app = self.app_config.initialize_celery_app()
+
 
     def get_entity_data(
         self, entity_type: EntityType, entity_id: str
@@ -86,6 +94,19 @@ class StreamlitAdminApp:
         entities = entity_ref.stream()
         return [entity.id for entity in entities]
 
+    def get_proactive_messaging_context(self, bot_id: str) -> ProactiveMessagingContext:
+        """
+        Creates a ProactiveMessagingContext for the specified bot.
+
+        Args:
+            bot_id (str): The bot user ID.
+
+        Returns:
+            ProactiveMessagingContext: The context object for proactive messaging.
+        """
+        self.app_config.load_config_from_firebase(bot_id, db=self.db)
+        client = AsyncWebClient(token=self.app_config.bot_token)
+        return ProactiveMessagingContext(client, self.app_config, bot_id)
 
 def load_prefix_messages_from_csv(csv_content: str) -> list[dict[str, str]]:
     """
@@ -160,6 +181,33 @@ def main():
     with tab2:
         handle_entity_tab(admin_app, EntityType.BOT)
 
+def proactive_task_panel(admin_app: StreamlitAdminApp, proactive_settings, bot_id: str):
+    """Renders the proactive task management panel in Streamlit."""
+    st.subheader("Proactive Messaging Task Management")
+
+    # Retrieve current task info
+    task_id = proactive_settings.get("current_task_id")
+    scheduled_time = proactive_settings.get("last_scheduled")
+
+    if task_id:
+        st.text(f"Current Task ID: {task_id}")
+        st.text(f"Scheduled Time: {scheduled_time}")
+        if st.button("Cancel Current Task"):
+            cancel_current_proactive_message_task(
+                admin_app.get_proactive_messaging_context(bot_id),
+                admin_app.celery_app,
+                admin_app.db
+            )
+            st.success("Current task cancelled.")
+    else:
+        st.write("No task currently scheduled.")
+        if st.button("Schedule New Task"):
+            schedule_proactive_message_task(
+                admin_app.get_proactive_messaging_context(bot_id),
+                admin_app.celery_app,
+                admin_app.db
+            )
+            st.success("New task scheduled.")
 
 def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
     """
@@ -243,6 +291,8 @@ def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
                 key="proactive_temperature",
                 disabled=not proactive_editable,
             )
+
+            proactive_task_panel(admin_app, proactive_settings, entity_id_to_upload)
 
     elif entity_type == EntityType.COMPANION:
         # Companion-specific UI

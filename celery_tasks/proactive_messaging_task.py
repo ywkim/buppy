@@ -8,6 +8,7 @@ from typing import Any
 from celery import Celery
 from google.cloud import firestore
 
+from utils.logging_utils import create_log_message
 from utils.proactive_messaging_utils import (
     ProactiveMessagingContext,
     calculate_next_schedule_time,
@@ -41,7 +42,18 @@ def create_proactive_message_task(celery_app: Celery, db: firestore.Client) -> A
             context (ProactiveMessagingContext): Context containing Slack client,
             app configuration, and bot user ID.
         """
+        context.app_config.load_config_from_firebase(context.bot_user_id)
+        logging.info("Configuration updated from Firebase Firestore.")
+
         asyncio.run(generate_and_send_proactive_message(context))
+
+        channel = context.app_config.proactive_slack_channel
+        logging.info(
+            create_log_message(
+                "Proactive message sent to channel",
+                channel=channel,
+            )
+        )
 
         # Schedule the next proactive message
         schedule_proactive_message_task(context, celery_app, db)
