@@ -25,7 +25,7 @@ from utils.logging_utils import create_log_message
 from utils.message_utils import prepare_chat_messages
 from utils.proactive_messaging_utils import (
     calculate_next_schedule_time,
-    generate_and_send_proactive_message,
+    generate_and_send_proactive_message_async,
 )
 
 ERROR_EMOJI = "bangbang"
@@ -81,7 +81,7 @@ async def send_proactive_message(
         await app_config.load_config_from_firebase(bot_user_id)
         logging.info("Configuration updated from Firebase Firestore.")
 
-    await generate_and_send_proactive_message(client, app_config, bot_user_id)
+    await generate_and_send_proactive_message_async(client, app_config)
 
     channel = app_config.proactive_slack_channel
     logging.info(
@@ -92,7 +92,7 @@ async def send_proactive_message(
     )
 
     # Schedule the next proactive message
-    await schedule_next_proactive_message(context, scheduler)
+    await schedule_next_proactive_message(client, app_config, bot_user_id, scheduler)
 
 
 def extract_image_url(message: dict[str, Any]) -> str | None:
