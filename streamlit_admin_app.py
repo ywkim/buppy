@@ -162,14 +162,14 @@ def proactive_task_panel(
             cancel_current_proactive_message_task(
                 bot_id, admin_app.celery_app, admin_app.db
             )
-            st.success("Current task cancelled.")
+            st.rerun()
     else:
         st.write("No task currently scheduled.")
         if st.button("Schedule New Task"):
             schedule_proactive_message_task(
                 proactive_settings, bot_id, admin_app.celery_app, admin_app.db
             )
-            st.success("New task scheduled.")
+            st.rerun()
 
 
 def handle_proactive_task_tab(admin_app: StreamlitAdminApp):
