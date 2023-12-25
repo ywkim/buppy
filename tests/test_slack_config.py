@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import os
 import unittest
-from unittest.mock import patch
 
 from config.settings.api_settings import APISettings
 from config.settings.firebase_settings import FirebaseSettings
