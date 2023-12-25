@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import logging
 from io import StringIO
-from typing import Any
+from typing import Any, Callable
 
 import pytz
 import streamlit as st
@@ -221,6 +221,7 @@ def handle_proactive_task_tab(admin_app: StreamlitAdminApp):
 def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
     """
     Handles the UI and logic for a specific entity tab (bot or companion).
+    This function now delegates specific UI components to helper functions.
 
     Args:
         admin_app: The instance of StreamlitAdminApp.
@@ -244,6 +245,28 @@ def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
 
     # Entity Specific UI Components
     if entity_type == EntityType.BOT:
+        entity_data = handle_bot_settings(existing_data, admin_app)
+    elif entity_type == EntityType.COMPANION:
+        entity_data = handle_companion_settings(existing_data, admin_app)
+
+    if entity_id_to_upload and st.button(f"Upload {entity_type.name.title()} Data"):
+        # Uploading data to Firestore
+        admin_app.upload_entity_data(entity_type, entity_id_to_upload, entity_data)
+        st.success(
+            f"{entity_type.name.capitalize()} '{entity_id_to_upload}' data updated successfully."
+        )
+
+def handle_bot_settings(existing_data: dict[str, Any], admin_app: StreamlitAdminApp) -> dict[str, Any]:
+    """
+    Handles the UI components specific to the Bot entity.
+
+    Args:
+        existing_data: The existing data of the bot entity.
+        admin_app: The instance of StreamlitAdminApp.
+
+    Returns:
+        The updated bot entity data.
+    """
         # Bot-specific UI
         slack_bot_token = st.text_input(
             "Slack Bot Token", value=existing_data.get("slack_bot_token", "")
@@ -306,7 +329,35 @@ def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
                 disabled=not proactive_editable,
             )
 
-    elif entity_type == EntityType.COMPANION:
+        # Preparing Bot data for upload
+        entity_data = {
+            "CompanionId": selected_companion_id,
+            "slack_bot_token": slack_bot_token,
+            "slack_app_token": slack_app_token,
+            "proactive_messaging": {
+                "enabled": proactive_enabled,
+                "interval_days": proactive_interval_days,
+                "system_prompt": proactive_system_prompt,
+                "slack_channel": proactive_slack_channel,
+                "temperature": proactive_temperature,
+            }
+            if proactive_enabled
+            else {"enabled": False},
+        }
+
+        return entity_data
+
+def handle_companion_settings(existing_data: dict[str, Any], admin_app: StreamlitAdminApp) -> dict[str, Any]:
+    """
+    Handles the UI components specific to the Companion entity.
+
+    Args:
+        existing_data: The existing data of the companion entity.
+        admin_app: The instance of StreamlitAdminApp.
+
+    Returns:
+        The updated companion entity data.
+    """
         # Companion-specific UI
         # Core Settings: Chat Model, System Prompt, Temperature
         chat_models = ["gpt-4", "gpt-4-1106-preview", "gpt-3.5-turbo"]
@@ -341,52 +392,21 @@ def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
             value=existing_prefix_messages_str,
         )
 
+        # Preparing Companion data for upload
         edited_prefix_messages = (
             load_prefix_messages_from_csv(prefix_messages_str)
             if prefix_messages_str
             else []
         )
+        entity_data = {
+            "chat_model": chat_model,
+            "system_prompt": system_prompt,
+            "temperature": temperature,
+            "vision_enabled": vision_enabled,
+            "prefix_messages_content": edited_prefix_messages,
+        }
 
-    # Entity data upload logic
-    if entity_id_to_upload and st.button(f"Upload {entity_type.name.title()} Data"):
-        if entity_type == EntityType.BOT:
-            # Preparing Bot data for upload
-            entity_data = {
-                "CompanionId": selected_companion_id,
-                "slack_bot_token": slack_bot_token,
-                "slack_app_token": slack_app_token,
-                "proactive_messaging": {
-                    "enabled": proactive_enabled,
-                    "interval_days": proactive_interval_days,
-                    "system_prompt": proactive_system_prompt,
-                    "slack_channel": proactive_slack_channel,
-                    "temperature": proactive_temperature,
-                }
-                if proactive_enabled
-                else {"enabled": False},
-            }
-
-        elif entity_type == EntityType.COMPANION:
-            # Preparing Companion data for upload
-            edited_prefix_messages = (
-                load_prefix_messages_from_csv(prefix_messages_str)
-                if prefix_messages_str
-                else []
-            )
-            entity_data = {
-                "chat_model": chat_model,
-                "system_prompt": system_prompt,
-                "temperature": temperature,
-                "vision_enabled": vision_enabled,
-                "prefix_messages_content": edited_prefix_messages,
-            }
-
-        # Uploading data to Firestore
-        admin_app.upload_entity_data(entity_type, entity_id_to_upload, entity_data)
-        st.success(
-            f"{entity_type.name.capitalize()} '{entity_id_to_upload}' data updated successfully."
-        )
-
+        return entity_data
 
 def main():
     """
