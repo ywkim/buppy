@@ -416,6 +416,7 @@ async def main():
     app_config.load_config(args.config_file)
 
     # Load Firebase configuration if enabled
+    bot_user_id_from_config = None
     if app_config.firebase_enabled:
         bot_user_id_from_config = app_config.api_settings.slack_bot_user_id
         if bot_user_id_from_config is None:

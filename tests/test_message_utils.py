@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 
 from streamlit_app import format_messages
 from utils.message_utils import InvalidRoleError, load_prefix_messages_from_file
@@ -25,7 +25,7 @@ class TestMessageUtils(unittest.TestCase):
         # Mocking file reading operation
         with patch(
             "builtins.open",
-            new_callable=unittest.mock.mock_open,
+            new_callable=mock_open,
             read_data="AI,Hello\nHuman,Hi",
         ) as mock_file:
             result = load_prefix_messages_from_file(valid_file_path)
@@ -38,7 +38,7 @@ class TestMessageUtils(unittest.TestCase):
         # Mocking file reading operation with invalid role
         with patch(
             "builtins.open",
-            new_callable=unittest.mock.mock_open,
+            new_callable=mock_open,
             read_data="Invalid,Hello",
         ):
             with self.assertRaises(InvalidRoleError):

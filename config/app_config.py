@@ -159,8 +159,8 @@ def init_chat_model(app_config: AppConfig) -> ChatOpenAI:
     chat = ChatOpenAI(
         model=app_config.core_settings.chat_model,
         temperature=app_config.core_settings.temperature,
-        openai_api_key=app_config.api_settings.openai_api_key,
-        openai_organization=app_config.api_settings.openai_organization,
+        openai_api_key=app_config.api_settings.openai_api_key,  # type: ignore
+        openai_organization=app_config.api_settings.openai_organization,  # type: ignore
         max_tokens=MAX_TOKENS,
     )  # type: ignore
     return chat
@@ -185,8 +185,8 @@ def init_proactive_chat_model(app_config: AppConfig) -> ChatOpenAI:
     chat = ChatOpenAI(
         model=app_config.core_settings.chat_model,
         temperature=proactive_temp,
-        openai_api_key=app_config.api_settings.openai_api_key,
-        openai_organization=app_config.api_settings.openai_organization,
+        openai_api_key=app_config.api_settings.openai_api_key,  # type: ignore
+        openai_organization=app_config.api_settings.openai_organization,  # type: ignore
         max_tokens=MAX_TOKENS,
     )  # type: ignore
     return chat
