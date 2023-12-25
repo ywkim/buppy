@@ -56,15 +56,18 @@ def create_proactive_message_task(celery_app: Celery) -> Any:
         )
 
         # Schedule the next proactive message
-        schedule_proactive_message_task(app_config.proactive_messaging_settings, bot_user_id, celery_app, db)
+        schedule_proactive_message_task(
+            app_config.proactive_messaging_settings, bot_user_id, celery_app, db
+        )
 
     return schedule_proactive_message
+
 
 def schedule_proactive_message_task(
     settings: ProactiveMessagingSettings,
     bot_user_id: str,
     celery_app: Celery,
-    db: firestore.Client
+    db: firestore.Client,
 ) -> None:
     """
     Schedules a proactive messaging task and updates the task ID in Firestore.
@@ -82,13 +85,18 @@ def schedule_proactive_message_task(
     # Update the task ID in Firestore
     update_task_in_firestore(db, bot_user_id, task.id, next_schedule_time)
 
-    logging.info("Proactive message scheduled for %s with task ID %s", next_schedule_time, task.id)
+    logging.info(
+        "Proactive message scheduled for %s with task ID %s",
+        next_schedule_time,
+        task.id,
+    )
+
 
 def update_task_in_firestore(
     db: firestore.Client,
     bot_user_id: str,
     task_id: str | None,
-    eta: datetime | None = None
+    eta: datetime | None = None,
 ) -> None:
     """
     Updates the task ID and eta in Firestore for the given bot.
@@ -112,7 +120,10 @@ def update_task_in_firestore(
 
     bot_ref.update(update_data)
 
-    logging.info("Firestore updated for bot %s: task_id=%s, eta=%s", bot_user_id, task_id, eta)
+    logging.info(
+        "Firestore updated for bot %s: task_id=%s, eta=%s", bot_user_id, task_id, eta
+    )
+
 
 def get_current_task_id(db: firestore.Client, bot_user_id: str) -> str | None:
     """
@@ -130,6 +141,7 @@ def get_current_task_id(db: firestore.Client, bot_user_id: str) -> str | None:
     if bot_doc.exists:
         return bot_doc.to_dict().get("proactive_messaging", {}).get("current_task_id")
     return None
+
 
 def cancel_current_proactive_message_task(
     bot_user_id: str,

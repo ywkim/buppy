@@ -8,7 +8,6 @@ from celery import Celery
 from google.cloud import firestore
 from google.oauth2 import service_account
 
-from config.sync_app_config import SyncAppConfig
 from config.loaders.streamlit_loader import load_settings_from_streamlit_secrets
 from config.settings.api_settings import APISettings
 from config.settings.celery_settings import CelerySettings
@@ -16,6 +15,7 @@ from config.settings.core_settings import CoreSettings
 from config.settings.firebase_settings import FirebaseSettings
 from config.settings.langsmith_settings import LangSmithSettings
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
+from config.sync_app_config import SyncAppConfig
 
 
 class EntityType(Enum):

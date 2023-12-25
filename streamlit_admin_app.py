@@ -33,8 +33,7 @@ class StreamlitAdminApp:
         self.app_config = StreamlitAppConfig()
         self.app_config.load_config()
         self.db = self.app_config.initialize_firestore_client()
-        self.celery_app = self.app_config.initialize_celery_app('streamlit_admin_app')
-
+        self.celery_app = self.app_config.initialize_celery_app("streamlit_admin_app")
 
     def get_entity_data(
         self, entity_type: EntityType, entity_id: str
@@ -87,6 +86,7 @@ class StreamlitAdminApp:
         entity_ref = self.db.collection(entity_type.value)
         entities = entity_ref.stream()
         return [entity.id for entity in entities]
+
 
 def load_prefix_messages_from_csv(csv_content: str) -> list[dict[str, str]]:
     """
@@ -142,8 +142,11 @@ def format_prefix_messages_for_display(messages: list[dict[str, str]]) -> str:
     return output.getvalue().strip()
 
 
-
-def proactive_task_panel(admin_app: StreamlitAdminApp, proactive_settings: ProactiveMessagingSettings, bot_id: str):
+def proactive_task_panel(
+    admin_app: StreamlitAdminApp,
+    proactive_settings: ProactiveMessagingSettings,
+    bot_id: str,
+):
     """Renders the proactive task management panel in Streamlit."""
     # Retrieve current task info
     task_id = proactive_settings.current_task_id
@@ -151,25 +154,23 @@ def proactive_task_panel(admin_app: StreamlitAdminApp, proactive_settings: Proac
 
     if task_id:
         # Display scheduled time in human-readable format
-        scheduled_time_str = scheduled_time.strftime("%Y-%m-%d %H:%M:%S") if scheduled_time else "N/A"
+        scheduled_time_str = (
+            scheduled_time.strftime("%Y-%m-%d %H:%M:%S") if scheduled_time else "N/A"
+        )
         st.text(f"Scheduled Time: {scheduled_time_str}")
         if st.button("Cancel Current Task"):
             cancel_current_proactive_message_task(
-                bot_id,
-                admin_app.celery_app,
-                admin_app.db
+                bot_id, admin_app.celery_app, admin_app.db
             )
             st.success("Current task cancelled.")
     else:
         st.write("No task currently scheduled.")
         if st.button("Schedule New Task"):
             schedule_proactive_message_task(
-                proactive_settings,
-                bot_id,
-                admin_app.celery_app,
-                admin_app.db
+                proactive_settings, bot_id, admin_app.celery_app, admin_app.db
             )
             st.success("New task scheduled.")
+
 
 def handle_proactive_task_tab(admin_app: StreamlitAdminApp):
     """Handles the UI and logic for the proactive task management tab."""
@@ -194,7 +195,11 @@ def handle_proactive_task_tab(admin_app: StreamlitAdminApp):
                     st.write(f"Temperature: {proactive_settings.temperature}")
                     task_id = proactive_settings.current_task_id
                     scheduled_time = proactive_settings.last_scheduled
-                    scheduled_time_str = scheduled_time.strftime("%Y-%m-%d %H:%M:%S") if scheduled_time else "N/A"
+                    scheduled_time_str = (
+                        scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
+                        if scheduled_time
+                        else "N/A"
+                    )
                     st.write(f"Current Task ID: {task_id or 'N/A'}")
                     st.write(f"Last Scheduled: {scheduled_time_str}")
 
@@ -202,6 +207,7 @@ def handle_proactive_task_tab(admin_app: StreamlitAdminApp):
         else:
             st.warning("Proactive messaging is currently disabled for this bot.")
             st.info("Enable proactive messaging in the Bot settings to schedule tasks.")
+
 
 def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
     """
@@ -369,6 +375,7 @@ def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
             f"{entity_type.name.capitalize()} '{entity_id_to_upload}' data updated successfully."
         )
 
+
 def main():
     """
     The main function to run the Streamlit admin app.
@@ -390,6 +397,7 @@ def main():
 
     with tab3:
         handle_proactive_task_tab(admin_app)
+
 
 if __name__ == "__main__":
     main()

@@ -62,8 +62,6 @@ def execute_proactive_messaging_update(
         revoke_existing_tasks(celery_app, current_task_id)
 
 
-
-
 @firestore.transactional
 def update_proactive_messaging_settings(
     transaction: Transaction,

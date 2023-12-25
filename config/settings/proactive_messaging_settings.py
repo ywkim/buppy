@@ -1,7 +1,9 @@
 # pylint: disable=consider-alternative-union-syntax
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
 from pydantic import BaseModel, root_validator, validator
+
 
 class ProactiveMessagingSettings(BaseModel):
     enabled: bool = False
@@ -21,7 +23,7 @@ class ProactiveMessagingSettings(BaseModel):
                     raise ValueError(f"{field} is required when enabled is True")
         return values
 
-    @validator('last_scheduled', pre=True)
+    @validator("last_scheduled", pre=True)
     def parse_last_scheduled(cls, value):  # pylint: disable=no-self-argument
         if isinstance(value, str):
             return datetime.fromisoformat(value)
