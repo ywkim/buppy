@@ -33,22 +33,6 @@ class TestSlackAppConfig(unittest.TestCase):
         }
         self.app_config = SlackAppConfig()
 
-    def test_load_config_from_env_vars(self) -> None:
-        """Test load_config_from_env_vars() to verify correct reading of environment variables."""
-        with patch.dict(
-            os.environ,
-            {
-                "OPENAI_API_KEY": "test",
-                "SLACK_BOT_TOKEN": "test",
-                "SLACK_APP_TOKEN": "test",
-                "CHAT_MODEL": "gpt-4",
-                "SYSTEM_PROMPT": "You are a helpful assistant.",
-                "TEMPERATURE": "0",
-                "FIREBASE_ENABLED": "False",
-            },
-        ):
-            self.app_config.load_config_from_env_vars()
-
     def test_validation(self):
         """Test configuration validation logic."""
         self.app_config.api_settings = APISettings(

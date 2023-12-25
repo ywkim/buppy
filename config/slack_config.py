@@ -48,19 +48,6 @@ class SlackAppConfig(AppConfig):
         )
         logging.info("Configuration loaded from file %s", config_file)
 
-    def load_config_from_env_vars(self) -> None:
-        """
-        Load configuration from environment variables.
-
-        This method loads the Firebase and API related settings from the
-        environment variables. It validates the configurations based on the
-        enabled/disabled status of certain features.
-        """
-        # Load Firebase settings
-        self.firebase_settings.enabled = load_env_value(
-            "FIREBASE_ENABLED", self.firebase_settings.enabled, bool
-        )
-
     def _validate_config(self) -> None:
         """Validate that required configuration variables are present."""
         super()._validate_config()
@@ -169,6 +156,6 @@ class SlackAppConfig(AppConfig):
             self.load_config_from_file("config.ini")
         else:
             # If no config file provided, load config from environment variables
-            self.load_config_from_env_vars()
+            pass
 
         self._validate_config()
