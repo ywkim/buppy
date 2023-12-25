@@ -247,7 +247,7 @@ def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
     if entity_type == EntityType.BOT:
         entity_data = handle_bot_settings(existing_data, admin_app)
     elif entity_type == EntityType.COMPANION:
-        entity_data = handle_companion_settings(existing_data, admin_app)
+        entity_data = handle_companion_settings(existing_data)
 
     if entity_id_to_upload and st.button(f"Upload {entity_type.name.title()} Data"):
         # Uploading data to Firestore
