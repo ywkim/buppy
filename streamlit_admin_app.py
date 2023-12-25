@@ -2,24 +2,17 @@ from __future__ import annotations
 
 import csv
 import logging
-from enum import Enum
 from io import StringIO
 from typing import Any
 
 import streamlit as st
-from slack_sdk import WebClient
 
 from celery_tasks.proactive_messaging_task import (
     cancel_current_proactive_message_task,
     schedule_proactive_message_task,
 )
 from config.streamlit_config import StreamlitAppConfig
-
-
-class EntityType(Enum):
-    BOT = "Bots"
-    COMPANION = "Companions"
-
+from config.sync_app_config import EntityType
 
 class StreamlitAdminApp:
     """
@@ -38,7 +31,7 @@ class StreamlitAdminApp:
         self.app_config = StreamlitAppConfig()
         self.app_config.load_config()
         self.db = self.app_config.initialize_firestore_client()
-        self.celery_app = self.app_config.initialize_celery_app()
+        self.celery_app = self.app_config.initialize_celery_app('streamlit_admin_app')
 
 
     def get_entity_data(
@@ -92,20 +85,6 @@ class StreamlitAdminApp:
         entity_ref = self.db.collection(entity_type.value)
         entities = entity_ref.stream()
         return [entity.id for entity in entities]
-
-    def get_slack_client(self, bot_id: str) -> WebClient:
-        """
-        Creates a ProactiveMessagingContext for the specified bot.
-
-        Args:
-            bot_id (str): The bot user ID.
-
-        Returns:
-            ProactiveMessagingContext: The context object for proactive messaging.
-        """
-        self.app_config.load_config_from_firebase(bot_id, db=self.db)
-        client = WebClient(token=self.app_config.bot_token)
-        return client
 
 def load_prefix_messages_from_csv(csv_content: str) -> list[dict[str, str]]:
     """
@@ -189,7 +168,6 @@ def proactive_task_panel(admin_app: StreamlitAdminApp, proactive_settings, bot_i
     scheduled_time = proactive_settings.get("last_scheduled")
 
     if task_id:
-        st.text(f"Current Task ID: {task_id}")
         st.text(f"Scheduled Time: {scheduled_time}")
         if st.button("Cancel Current Task"):
             cancel_current_proactive_message_task(
@@ -202,8 +180,7 @@ def proactive_task_panel(admin_app: StreamlitAdminApp, proactive_settings, bot_i
         st.write("No task currently scheduled.")
         if st.button("Schedule New Task"):
             schedule_proactive_message_task(
-                admin_app.get_slack_client(bot_id),
-                admin_app.app_config,
+                proactive_settings,
                 bot_id,
                 admin_app.celery_app,
                 admin_app.db

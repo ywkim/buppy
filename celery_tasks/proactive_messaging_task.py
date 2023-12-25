@@ -6,9 +6,9 @@ from typing import Any
 
 from celery import Celery
 from google.cloud import firestore
-from slack_sdk import WebClient
 
-from config.streamlit_config import StreamlitAppConfig
+from config.celery_config import CeleryWorkerConfig
+from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 from utils.logging_utils import create_log_message
 from utils.proactive_messaging_utils import (
     calculate_next_schedule_time,
@@ -20,30 +20,29 @@ logging.basicConfig(
 )
 
 
-def create_proactive_message_task(celery_app: Celery, db: firestore.Client) -> Any:
+def create_proactive_message_task(celery_app: Celery) -> Any:
     """
     Registers a Celery task for sending proactive messages using the given Celery app.
-
-    Args:
-        celery_app (Celery): The Celery application instance to register the task with.
-        db (firestore.Client): The Firestore client for database operations.
 
     Returns:
         The Celery task function.
     """
 
     @celery_app.task(name="schedule_proactive_message")
-    def schedule_proactive_message(client: WebClient, app_config: StreamlitAppConfig, bot_user_id: str) -> None:
+    def schedule_proactive_message(bot_user_id: str) -> None:
         """
         Sends a proactive message and schedules the next message. This function
         is registered as a Celery task to handle the asynchronous operation.
 
         Args:
-            client (WebClient): The Slack client instance.
-            app_config (StreamlitAppConfig): The application configuration.
             bot_user_id (str): The user ID of the bot.
         """
+        app_config = CeleryWorkerConfig()
+        app_config.load_config()
+        celery_app = app_config.initialize_celery_app("proactive_messaging_task")
+        db = app_config.initialize_firestore_client()
         app_config.load_config_from_firebase(bot_user_id, db=db)
+        client = app_config.initialize_slack_client(bot_user_id)
         logging.info("Configuration updated from Firebase Firestore.")
 
         generate_and_send_proactive_message_sync(client, app_config)
@@ -57,13 +56,12 @@ def create_proactive_message_task(celery_app: Celery, db: firestore.Client) -> A
         )
 
         # Schedule the next proactive message
-        schedule_proactive_message_task(client, app_config, bot_user_id, celery_app, db)
+        schedule_proactive_message_task(app_config.proactive_messaging_settings, bot_user_id, celery_app, db)
 
     return schedule_proactive_message
 
 def schedule_proactive_message_task(
-    client: WebClient,
-    app_config: StreamlitAppConfig,
+    settings: ProactiveMessagingSettings,
     bot_user_id: str,
     celery_app: Celery,
     db: firestore.Client
@@ -72,15 +70,14 @@ def schedule_proactive_message_task(
     Schedules a proactive messaging task and updates the task ID in Firestore.
 
     Args:
-        client (AsyncWebClient): The Slack client instance.
-        app_config (StreamlitAppConfig): The application configuration.
+        settings (ProactiveMessagingSettings): Configuration settings for proactive messaging.
         bot_user_id (str): The user ID of the bot.
         celery_app (Celery): The Celery application instance.
         db (firestore.Client): Firestore client for database operations.
     """
-    next_schedule_time = calculate_next_schedule_time(app_config.proactive_messaging_settings)
-    task_function = create_proactive_message_task(celery_app, db)
-    task = task_function.apply_async(args=[client, app_config, bot_user_id], eta=next_schedule_time)
+    next_schedule_time = calculate_next_schedule_time(settings)
+    task_function = create_proactive_message_task(celery_app)
+    task = task_function.apply_async(args=[bot_user_id], eta=next_schedule_time)
 
     # Update the task ID in Firestore
     update_task_in_firestore(db, bot_user_id, task.id, next_schedule_time)

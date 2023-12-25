@@ -3,4 +3,4 @@ from typing import Optional
 from pydantic_settings import BaseSettings
 
 class CelerySettings(BaseSettings):
-    broker_url: Optional[str] = None
+    broker_url: Optional[str] = "pyamqp://guest:guest@localhost//"
