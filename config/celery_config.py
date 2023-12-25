@@ -20,7 +20,7 @@ class CeleryWorkerConfig(SyncAppConfig):
         """
         return firestore.Client()
 
-    def initialize_slack_client(self, bot_id: str) -> WebClient:
+    def initialize_slack_client(self) -> WebClient:
         client = WebClient(token=self.bot_token)
         return client
 

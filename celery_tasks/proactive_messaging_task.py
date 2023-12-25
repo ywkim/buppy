@@ -42,7 +42,7 @@ def create_proactive_message_task(celery_app: Celery) -> Any:
         celery_app = app_config.initialize_celery_app("proactive_messaging_task")
         db = app_config.initialize_firestore_client()
         app_config.load_config_from_firebase(bot_user_id, db=db)
-        client = app_config.initialize_slack_client(bot_user_id)
+        client = app_config.initialize_slack_client()
         logging.info("Configuration updated from Firebase Firestore.")
 
         generate_and_send_proactive_message_sync(client, app_config)

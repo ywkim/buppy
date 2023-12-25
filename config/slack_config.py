@@ -6,7 +6,6 @@ import os
 from google.cloud import firestore
 
 from config.app_config import AppConfig
-from config.loaders.firebase_loader import load_settings_from_firestore
 from config.loaders.ini_loader import load_settings_from_ini_section
 from config.settings.api_settings import APISettings
 from config.settings.core_settings import CoreSettings
