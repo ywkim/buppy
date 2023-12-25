@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 from datetime import datetime, timedelta
 
+import pytz
 from langchain.schema import SystemMessage
 from slack_sdk import WebClient
 from slack_sdk.web.async_client import AsyncWebClient
@@ -38,13 +39,17 @@ def calculate_next_schedule_time(settings: ProactiveMessagingSettings) -> dateti
         settings (ProactiveMessagingSettings): Configuration settings for proactive messaging.
 
     Returns:
-        datetime: The calculated next schedule time for a proactive message.
+        datetime: The calculated next schedule time in UTC for a proactive message.
     """
     interval_days = settings.interval_days
     if interval_days is None:
         raise ValueError("interval_days must be set for proactive messaging.")
 
-    return datetime.now() + timedelta(days=interval_days * random.random() * 2)
+    # Get current time in UTC
+    now_utc = datetime.now(pytz.utc)
+
+    # Calculate the next schedule time
+    return now_utc + timedelta(days=interval_days * random.random() * 2)
 
 
 async def generate_and_send_proactive_message_async(
