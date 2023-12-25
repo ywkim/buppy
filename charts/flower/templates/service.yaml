@@ -1,0 +1,13 @@
+# NodePort Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "flower.fullname" . }}
+spec:
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5555
+  selector:
+    app: celery-flower

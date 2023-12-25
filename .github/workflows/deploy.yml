@@ -14,6 +14,7 @@ env:
   GKE_ZONE: us-central1
   IMAGE: slack-bot
   OPENAI_ORGANIZATION: org-kJ1nkbOSvAO5nCTrJmY3Nm4x
+  BROKER_URL: amqp://alola:password@rabbitmq.svc.cluster.local:5672
 
 jobs:
   setup-build-publish-deploy:
@@ -91,3 +92,29 @@ jobs:
           --set slackBotUserId=U060YNQLWAJ \
           --debug
         kubectl get services -o wide -n u060ynqlwaj
+
+    - name: Set up Helm
+      run: |-
+        helm repo add bitnami https://charts.bitnami.com/bitnami
+        helm repo update
+
+    - name: Deploy RabbitMQ with external access
+      run: |-
+        helm upgrade --install rabbitmq bitnami/rabbitmq \
+          --set auth.username=alola \
+          --set auth.password=password \
+          --set service.type=LoadBalancer
+
+    - name: Deploy Celery Worker
+      run: |-
+        helm upgrade --install celery ./charts/celery \
+          --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
+          --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
+          --set openaiOrganization=$OPENAI_ORGANIZATION \
+          --set brokerUrl=$BROKER_URL
+
+    - name: Deploy Flower (Celery Monitoring Tool)
+      run: |-
+        helm upgrade --install flower ./charts/flower \
+          --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
+          --set brokerUrl=$BROKER_URL

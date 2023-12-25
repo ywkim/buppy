@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "flower.fullname" . }}
+  labels:
+    app: celery-flower
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: celery-flower
+  template:
+    metadata:
+      labels:
+        app: celery-flower
+    spec:
+      containers:
+        - name: celery-flower
+          command:
+            ["celery", "-A", "celery_app", "flower"]
+          image: {{ .Values.image }}
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-env

@@ -1,0 +1,38 @@
+# Celery Worker
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "celery.fullname" . }}
+  labels:
+    app: celery-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: celery-worker
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+    spec:
+      terminationGracePeriodSeconds: 300
+      containers:
+        - name: celery-worker
+          command:
+            ["celery", "-A", "celery_app", "worker", "-l", "INFO", "-Q", "celery"]
+          image: {{ .Values.image }}
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-env
+          volumeMounts:
+            - name: shmdir
+              mountPath: /dev/shm
+          securityContext:
+            runAsUser: 2 # non-root user
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: shmdir
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
