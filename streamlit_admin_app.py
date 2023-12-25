@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import logging
 from io import StringIO
-from typing import Any, Callable
+from typing import Any
 
 import pytz
 import streamlit as st
@@ -256,7 +256,10 @@ def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
             f"{entity_type.name.capitalize()} '{entity_id_to_upload}' data updated successfully."
         )
 
-def handle_bot_settings(existing_data: dict[str, Any], admin_app: StreamlitAdminApp) -> dict[str, Any]:
+
+def handle_bot_settings(
+    existing_data: dict[str, Any], admin_app: StreamlitAdminApp
+) -> dict[str, Any]:
     """
     Handles the UI components specific to the Bot entity.
 
@@ -347,13 +350,14 @@ def handle_bot_settings(existing_data: dict[str, Any], admin_app: StreamlitAdmin
 
     return entity_data
 
-def handle_companion_settings(existing_data: dict[str, Any], admin_app: StreamlitAdminApp) -> dict[str, Any]:
+
+def handle_companion_settings(existing_data: dict[str, Any]) -> dict[str, Any]:
     """
     Handles the UI components specific to the Companion entity.
 
     Args:
         existing_data: The existing data of the companion entity.
-        admin_app: The instance of StreamlitAdminApp.
+
 
     Returns:
         The updated companion entity data.
@@ -407,6 +411,7 @@ def handle_companion_settings(existing_data: dict[str, Any], admin_app: Streamli
     }
 
     return entity_data
+
 
 def main():
     """
