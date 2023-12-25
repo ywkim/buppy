@@ -11,8 +11,10 @@ from celery_tasks.proactive_messaging_task import (
     cancel_current_proactive_message_task,
     schedule_proactive_message_task,
 )
+from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 from config.streamlit_config import StreamlitAppConfig
 from config.sync_app_config import EntityType
+
 
 class StreamlitAdminApp:
     """
@@ -141,16 +143,16 @@ def format_prefix_messages_for_display(messages: list[dict[str, str]]) -> str:
 
 
 
-def proactive_task_panel(admin_app: StreamlitAdminApp, proactive_settings, bot_id: str):
+def proactive_task_panel(admin_app: StreamlitAdminApp, proactive_settings: ProactiveMessagingSettings, bot_id: str):
     """Renders the proactive task management panel in Streamlit."""
-    st.subheader("Proactive Messaging Task Management")
-
     # Retrieve current task info
-    task_id = proactive_settings.get("current_task_id")
-    scheduled_time = proactive_settings.get("last_scheduled")
+    task_id = proactive_settings.current_task_id
+    scheduled_time = proactive_settings.last_scheduled
 
     if task_id:
-        st.text(f"Scheduled Time: {scheduled_time}")
+        # Display scheduled time in human-readable format
+        scheduled_time_str = scheduled_time.strftime("%Y-%m-%d %H:%M:%S") if scheduled_time else "N/A"
+        st.text(f"Scheduled Time: {scheduled_time_str}")
         if st.button("Cancel Current Task"):
             cancel_current_proactive_message_task(
                 bot_id,
@@ -169,6 +171,38 @@ def proactive_task_panel(admin_app: StreamlitAdminApp, proactive_settings, bot_i
             )
             st.success("New task scheduled.")
 
+def handle_proactive_task_tab(admin_app: StreamlitAdminApp):
+    """Handles the UI and logic for the proactive task management tab."""
+    st.subheader("Proactive Messaging Task Management for Bots")
+
+    bot_ids = admin_app.get_entity_ids(EntityType.BOT)
+    selected_bot_id = st.selectbox("Select Bot ID", bot_ids)
+
+    if selected_bot_id:
+        existing_data = admin_app.get_entity_data(EntityType.BOT, selected_bot_id)
+        proactive_settings_data = existing_data.get("proactive_messaging", {})
+        proactive_settings = ProactiveMessagingSettings(**proactive_settings_data)
+
+        # Display current proactive settings in a user-friendly format
+        if proactive_settings.enabled:
+            with st.expander("Current Proactive Messaging Settings"):
+                st.write(f"Enabled: {proactive_settings.enabled}")
+                if proactive_settings.enabled:
+                    st.write(f"Interval Days: {proactive_settings.interval_days}")
+                    st.write(f"System Prompt: {proactive_settings.system_prompt}")
+                    st.write(f"Slack Channel: {proactive_settings.slack_channel}")
+                    st.write(f"Temperature: {proactive_settings.temperature}")
+                    task_id = proactive_settings.current_task_id
+                    scheduled_time = proactive_settings.last_scheduled
+                    scheduled_time_str = scheduled_time.strftime("%Y-%m-%d %H:%M:%S") if scheduled_time else "N/A"
+                    st.write(f"Current Task ID: {task_id or 'N/A'}")
+                    st.write(f"Last Scheduled: {scheduled_time_str}")
+
+            proactive_task_panel(admin_app, proactive_settings, selected_bot_id)
+        else:
+            st.warning("Proactive messaging is currently disabled for this bot.")
+            st.info("Enable proactive messaging in the Bot settings to schedule tasks.")
+
 def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
     """
     Handles the UI and logic for a specific entity tab (bot or companion).
@@ -177,6 +211,8 @@ def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
         admin_app: The instance of StreamlitAdminApp.
         entity_type: The type of entity (BOT or COMPANION).
     """
+    st.subheader(f"{entity_type.name.title()} Management")
+
     entity_ids = admin_app.get_entity_ids(entity_type)
     new_entity_option = f"Add New {entity_type.name.title()}"
     selected_entity_id = st.selectbox(
@@ -251,8 +287,6 @@ def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
                 key="proactive_temperature",
                 disabled=not proactive_editable,
             )
-
-            proactive_task_panel(admin_app, proactive_settings, entity_id_to_upload)
 
     elif entity_type == EntityType.COMPANION:
         # Companion-specific UI
@@ -346,13 +380,16 @@ def main():
 
     admin_app = StreamlitAdminApp()
 
-    tab1, tab2 = st.tabs(["Companions", "Bots"])
+    tab1, tab2, tab3 = st.tabs(["Companions", "Bots", "Proactive Tasks"])
 
     with tab1:
         handle_entity_tab(admin_app, EntityType.COMPANION)
 
     with tab2:
         handle_entity_tab(admin_app, EntityType.BOT)
+
+    with tab3:
+        handle_proactive_task_tab(admin_app)
 
 if __name__ == "__main__":
     main()
