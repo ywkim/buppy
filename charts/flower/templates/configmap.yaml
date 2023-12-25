@@ -4,5 +4,7 @@ metadata:
   name: {{ .Release.Name }}-env
 data:
   {{- toYaml .Values.env | nindent 2 }}
+  OPENAI_API_KEY: {{ .Values.openaiApiKey | quote }}
+  OPENAI_ORGANIZATION: {{ .Values.openaiOrganization | quote }}
   FLOWER_BROKER_API: {{ .Values.brokerUrl | quote }}
   CELERY_BROKER_URL: {{ .Values.brokerUrl | quote }}

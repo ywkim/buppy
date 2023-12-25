@@ -115,4 +115,6 @@ jobs:
       run: |-
         helm upgrade --install flower ./charts/flower \
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
+          --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
+          --set openaiOrganization=$OPENAI_ORGANIZATION \
           --set brokerUrl=$BROKER_URL
