@@ -31,7 +31,7 @@ class TestProactiveMessagingTask(unittest.TestCase):
             self.app_config.proactive_messaging_settings,
             self.bot_id,
             self.mock_celery_app,
-            self.mock_db,
+            self.mock_db,  # type: ignore
         )
 
         # Fetch updated document and validate changes
@@ -46,7 +46,7 @@ class TestProactiveMessagingTask(unittest.TestCase):
 
         # Call the function under test
         messaging_task.update_task_in_firestore(
-            self.mock_db, self.bot_id, self.task_id, None
+            self.mock_db, self.bot_id, self.task_id, None  # type: ignore
         )
 
         updated_doc = self.bot_ref.get()

@@ -139,7 +139,9 @@ def get_current_task_id(db: firestore.Client, bot_user_id: str) -> str | None:
     bot_ref = db.collection("Bots").document(bot_user_id)
     bot_doc = bot_ref.get()
     if bot_doc.exists:
-        return bot_doc.to_dict().get("proactive_messaging", {}).get("current_task_id")
+        bot_data = bot_doc.to_dict()
+        if bot_data is not None:
+            return bot_data.get("proactive_messaging", {}).get("current_task_id")
     return None
 
 
