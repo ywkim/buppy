@@ -5,6 +5,7 @@ from abc import abstractmethod
 from enum import Enum
 
 from celery import Celery
+from google.api_core.exceptions import InvalidArgument
 from google.cloud import firestore
 
 from config.app_config import AppConfig
@@ -56,7 +57,12 @@ class SyncAppConfig(AppConfig):
 
         collection_name = "Bots" if entity_type == EntityType.BOT else "Companions"
         entity_ref = db.collection(collection_name).document(entity_id)
-        entity = entity_ref.get()
+        logging.info(f"Attempting to fetch Firestore document: {entity_ref.path}")
+        try:
+            entity = entity_ref.get()
+        except InvalidArgument as e:
+            logging.error(f"InvalidArgument error fetching document: {e}")
+            raise
 
         if not entity.exists:
             raise FileNotFoundError(
