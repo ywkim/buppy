@@ -27,7 +27,7 @@ class StreamlitAdminApp:
         self.app_config.load_config()
         self.db = self.app_config._initialize_firebase_client()
 
-    def get_companion_data(self, companion_id: str) -> dict[str, str]:
+    def get_companion_data(self, companion_id: str) -> dict[str, Any]:
         """
         Retrieves companion data from Firestore.
 
@@ -43,7 +43,9 @@ class StreamlitAdminApp:
         companion_ref = self.db.collection("Companions").document(companion_id)
         companion = companion_ref.get()
         if companion.exists:
-            return companion.to_dict()
+            companion_data = companion.to_dict()
+            assert companion_data is not None
+            return companion_data
         raise ValueError(f"Companion document with ID {companion_id} does not exist.")
 
     def upload_companion_data(
