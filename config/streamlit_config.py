@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum
 
 import streamlit as st
 from google.cloud import firestore
@@ -14,7 +13,7 @@ from config.settings.core_settings import CoreSettings
 from config.settings.firebase_settings import FirebaseSettings
 from config.settings.langsmith_settings import LangSmithSettings
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
-from config.sync_app_config import EntityType, SyncAppConfig
+from config.sync_app_config import SyncAppConfig
 
 
 class StreamlitAppConfig(SyncAppConfig):
