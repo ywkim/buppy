@@ -1,5 +1,8 @@
-from pydantic import BaseModel
+from pydantic_settings import BaseSettings
 
 
-class FirebaseSettings(BaseModel):
+class FirebaseSettings(BaseSettings):
     enabled: bool = False
+
+    class Config:
+        env_prefix = "FIREBASE_"
