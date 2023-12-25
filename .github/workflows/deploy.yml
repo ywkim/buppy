@@ -12,7 +12,7 @@ env:
   GKE_ZONE: us-central1
   IMAGE: slack-bot
   OPENAI_ORGANIZATION: org-kJ1nkbOSvAO5nCTrJmY3Nm4x
-  BROKER_URL: amqp://alola:password@rabbitmq.svc.cluster.local:5672
+  BROKER_URL: amqp://alola:password@rabbitmq.default.svc.cluster.local:5672
 
 jobs:
   setup-build-publish-deploy:
