@@ -267,85 +267,85 @@ def handle_bot_settings(existing_data: dict[str, Any], admin_app: StreamlitAdmin
     Returns:
         The updated bot entity data.
     """
-        # Bot-specific UI
-        slack_bot_token = st.text_input(
-            "Slack Bot Token", value=existing_data.get("slack_bot_token", "")
+    # Bot-specific UI
+    slack_bot_token = st.text_input(
+        "Slack Bot Token", value=existing_data.get("slack_bot_token", "")
+    )
+    slack_app_token = st.text_input(
+        "Slack App Token", value=existing_data.get("slack_app_token", "")
+    )
+
+    # Fetch and display all available companion IDs
+    companion_ids = admin_app.get_entity_ids(EntityType.COMPANION)
+    companion_id_index = None
+    if "CompanionId" in existing_data:
+        existing_companion_id = existing_data["CompanionId"]
+        if existing_companion_id in companion_ids:
+            companion_id_index = companion_ids.index(existing_companion_id)
+    selected_companion_id = st.selectbox(
+        "Select Companion ID", options=companion_ids, index=companion_id_index
+    )
+
+    # Proactive Messaging Settings
+    proactive_settings = existing_data.get("proactive_messaging", {})
+    proactive_enabled = st.checkbox(
+        "Proactive Messaging Enabled",
+        value=proactive_settings.get("enabled", False),
+    )
+
+    # Determine if proactive settings should be editable
+    proactive_editable = proactive_enabled
+
+    # Proactive Messaging Settings UI
+    with st.expander("Proactive Messaging Settings", expanded=proactive_enabled):
+        proactive_interval_days = st.number_input(
+            "Interval Days",
+            min_value=0.0,
+            max_value=365.0,  # Maximum limit, adjust as needed
+            value=proactive_settings.get("interval_days", 0.0),
+            step=0.0001,
+            format="%.4f",
+            key="proactive_interval_days",
+            disabled=not proactive_editable,
         )
-        slack_app_token = st.text_input(
-            "Slack App Token", value=existing_data.get("slack_app_token", "")
+        proactive_system_prompt = st.text_area(
+            "System Prompt",
+            value=proactive_settings.get("system_prompt", ""),
+            key="proactive_system_prompt",
+            disabled=not proactive_editable,
+        )
+        proactive_slack_channel = st.text_input(
+            "Slack Channel",
+            value=proactive_settings.get("slack_channel", ""),
+            key="proactive_slack_channel",
+            disabled=not proactive_editable,
+        )
+        proactive_temperature = st.number_input(
+            "Temperature",
+            min_value=0.0,
+            max_value=2.0,
+            value=proactive_settings.get("temperature", 1.0),
+            key="proactive_temperature",
+            disabled=not proactive_editable,
         )
 
-        # Fetch and display all available companion IDs
-        companion_ids = admin_app.get_entity_ids(EntityType.COMPANION)
-        companion_id_index = None
-        if "CompanionId" in existing_data:
-            existing_companion_id = existing_data["CompanionId"]
-            if existing_companion_id in companion_ids:
-                companion_id_index = companion_ids.index(existing_companion_id)
-        selected_companion_id = st.selectbox(
-            "Select Companion ID", options=companion_ids, index=companion_id_index
-        )
-
-        # Proactive Messaging Settings
-        proactive_settings = existing_data.get("proactive_messaging", {})
-        proactive_enabled = st.checkbox(
-            "Proactive Messaging Enabled",
-            value=proactive_settings.get("enabled", False),
-        )
-
-        # Determine if proactive settings should be editable
-        proactive_editable = proactive_enabled
-
-        # Proactive Messaging Settings UI
-        with st.expander("Proactive Messaging Settings", expanded=proactive_enabled):
-            proactive_interval_days = st.number_input(
-                "Interval Days",
-                min_value=0.0,
-                max_value=365.0,  # Maximum limit, adjust as needed
-                value=proactive_settings.get("interval_days", 0.0),
-                step=0.0001,
-                format="%.4f",
-                key="proactive_interval_days",
-                disabled=not proactive_editable,
-            )
-            proactive_system_prompt = st.text_area(
-                "System Prompt",
-                value=proactive_settings.get("system_prompt", ""),
-                key="proactive_system_prompt",
-                disabled=not proactive_editable,
-            )
-            proactive_slack_channel = st.text_input(
-                "Slack Channel",
-                value=proactive_settings.get("slack_channel", ""),
-                key="proactive_slack_channel",
-                disabled=not proactive_editable,
-            )
-            proactive_temperature = st.number_input(
-                "Temperature",
-                min_value=0.0,
-                max_value=2.0,
-                value=proactive_settings.get("temperature", 1.0),
-                key="proactive_temperature",
-                disabled=not proactive_editable,
-            )
-
-        # Preparing Bot data for upload
-        entity_data = {
-            "CompanionId": selected_companion_id,
-            "slack_bot_token": slack_bot_token,
-            "slack_app_token": slack_app_token,
-            "proactive_messaging": {
-                "enabled": proactive_enabled,
-                "interval_days": proactive_interval_days,
-                "system_prompt": proactive_system_prompt,
-                "slack_channel": proactive_slack_channel,
-                "temperature": proactive_temperature,
-            }
-            if proactive_enabled
-            else {"enabled": False},
+    # Preparing Bot data for upload
+    entity_data = {
+        "CompanionId": selected_companion_id,
+        "slack_bot_token": slack_bot_token,
+        "slack_app_token": slack_app_token,
+        "proactive_messaging": {
+            "enabled": proactive_enabled,
+            "interval_days": proactive_interval_days,
+            "system_prompt": proactive_system_prompt,
+            "slack_channel": proactive_slack_channel,
+            "temperature": proactive_temperature,
         }
+        if proactive_enabled
+        else {"enabled": False},
+    }
 
-        return entity_data
+    return entity_data
 
 def handle_companion_settings(existing_data: dict[str, Any], admin_app: StreamlitAdminApp) -> dict[str, Any]:
     """
@@ -358,55 +358,55 @@ def handle_companion_settings(existing_data: dict[str, Any], admin_app: Streamli
     Returns:
         The updated companion entity data.
     """
-        # Companion-specific UI
-        # Core Settings: Chat Model, System Prompt, Temperature
-        chat_models = ["gpt-4", "gpt-4-1106-preview", "gpt-3.5-turbo"]
-        existing_model = existing_data.get("chat_model", "gpt-4")
-        if existing_model not in chat_models:
-            chat_models.append(existing_model)
-        chat_model_index = chat_models.index(existing_model)
-        chat_model = st.selectbox("Chat Model", chat_models, index=chat_model_index)
+    # Companion-specific UI
+    # Core Settings: Chat Model, System Prompt, Temperature
+    chat_models = ["gpt-4", "gpt-4-1106-preview", "gpt-3.5-turbo"]
+    existing_model = existing_data.get("chat_model", "gpt-4")
+    if existing_model not in chat_models:
+        chat_models.append(existing_model)
+    chat_model_index = chat_models.index(existing_model)
+    chat_model = st.selectbox("Chat Model", chat_models, index=chat_model_index)
 
-        # System prompt
-        system_prompt = st.text_area(
-            "System Prompt", value=existing_data.get("system_prompt", "")
-        )
+    # System prompt
+    system_prompt = st.text_area(
+        "System Prompt", value=existing_data.get("system_prompt", "")
+    )
 
-        # Temperature
-        temperature = st.number_input(
-            "Temperature",
-            min_value=0.0,
-            max_value=2.0,
-            value=existing_data.get("temperature", 1.0),
-        )
+    # Temperature
+    temperature = st.number_input(
+        "Temperature",
+        min_value=0.0,
+        max_value=2.0,
+        value=existing_data.get("temperature", 1.0),
+    )
 
-        vision_enabled = existing_data.get("vision_enabled", False)
-        st.checkbox("Vision Enabled", value=vision_enabled, disabled=True)
+    vision_enabled = existing_data.get("vision_enabled", False)
+    st.checkbox("Vision Enabled", value=vision_enabled, disabled=True)
 
-        # Prefix Messages
-        existing_prefix_messages_str = format_prefix_messages_for_display(
-            existing_data.get("prefix_messages_content", [])
-        )
-        prefix_messages_str = st.text_area(
-            "Edit Prefix Messages (CSV format: Role,Content)",
-            value=existing_prefix_messages_str,
-        )
+    # Prefix Messages
+    existing_prefix_messages_str = format_prefix_messages_for_display(
+        existing_data.get("prefix_messages_content", [])
+    )
+    prefix_messages_str = st.text_area(
+        "Edit Prefix Messages (CSV format: Role,Content)",
+        value=existing_prefix_messages_str,
+    )
 
-        # Preparing Companion data for upload
-        edited_prefix_messages = (
-            load_prefix_messages_from_csv(prefix_messages_str)
-            if prefix_messages_str
-            else []
-        )
-        entity_data = {
-            "chat_model": chat_model,
-            "system_prompt": system_prompt,
-            "temperature": temperature,
-            "vision_enabled": vision_enabled,
-            "prefix_messages_content": edited_prefix_messages,
-        }
+    # Preparing Companion data for upload
+    edited_prefix_messages = (
+        load_prefix_messages_from_csv(prefix_messages_str)
+        if prefix_messages_str
+        else []
+    )
+    entity_data = {
+        "chat_model": chat_model,
+        "system_prompt": system_prompt,
+        "temperature": temperature,
+        "vision_enabled": vision_enabled,
+        "prefix_messages_content": edited_prefix_messages,
+    }
 
-        return entity_data
+    return entity_data
 
 def main():
     """
