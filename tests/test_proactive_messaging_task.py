@@ -5,12 +5,10 @@ from unittest.mock import Mock
 
 from celery import Celery
 from mockfirestore import MockFirestore
-from slack_sdk.web.async_client import AsyncWebClient
 
 import celery_tasks.proactive_messaging_task as messaging_task
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 from config.slack_config import SlackAppConfig
-from utils.proactive_messaging_utils import ProactiveMessagingContext
 
 
 class TestProactiveMessagingTask(unittest.TestCase):
@@ -29,13 +27,9 @@ class TestProactiveMessagingTask(unittest.TestCase):
         """
         Test the schedule_proactive_message function to ensure it calls the update_proactive_messaging_settings function with correct parameters.
         """
-        client = AsyncWebClient()
-        context = ProactiveMessagingContext(
-            client=client, app_config=self.app_config, bot_user_id=self.bot_id
-        )
-
         messaging_task.schedule_proactive_message_task(
-            context,
+            self.app_config.proactive_messaging_settings,
+            self.bot_id,
             self.mock_celery_app,
             self.mock_db,
         )

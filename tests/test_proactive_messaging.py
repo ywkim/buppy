@@ -4,6 +4,8 @@ import unittest
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock
 
+import pytz
+
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
 from utils.proactive_messaging_utils import (
     calculate_next_schedule_time,
@@ -40,9 +42,14 @@ class TestProactiveMessaging(unittest.TestCase):
         """Test the calculate_next_schedule_time function."""
         if self.proactive_config.interval_days is not None:
             interval_days = self.proactive_config.interval_days
-            expected_time_start = datetime.now()
+
+            # Use timezone-aware datetime
+            expected_time_start = datetime.now(pytz.utc)
             calculated_time = calculate_next_schedule_time(self.proactive_config)
-            expected_time_end = datetime.now() + timedelta(days=interval_days * 2)
+            expected_time_end = datetime.now(pytz.utc) + timedelta(
+                days=interval_days * 2
+            )
+
             self.assertTrue(expected_time_start <= calculated_time <= expected_time_end)
 
 

@@ -4,7 +4,6 @@ import logging
 import os
 
 from google.cloud import firestore
-from google.cloud.firestore import Client as FirestoreClient
 
 from config.app_config import AppConfig
 from config.loaders.firebase_loader import load_settings_from_firestore

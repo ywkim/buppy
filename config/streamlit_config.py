@@ -4,7 +4,6 @@ import logging
 from enum import Enum
 
 import streamlit as st
-from celery import Celery
 from google.cloud import firestore
 from google.oauth2 import service_account
 

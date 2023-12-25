@@ -57,11 +57,11 @@ class SyncAppConfig(AppConfig):
 
         collection_name = "Bots" if entity_type == EntityType.BOT else "Companions"
         entity_ref = db.collection(collection_name).document(entity_id)
-        logging.info(f"Attempting to fetch Firestore document: {entity_ref.path}")
+        logging.info("Attempting to fetch Firestore document: %s", entity_ref.path)
         try:
             entity = entity_ref.get()
         except InvalidArgument as e:
-            logging.error(f"InvalidArgument error fetching document: {e}")
+            logging.error("InvalidArgument error fetching document")
             raise
 
         if not entity.exists:

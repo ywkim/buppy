@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import csv
 import logging
-from datetime import datetime
 from io import StringIO
 from typing import Any
 
