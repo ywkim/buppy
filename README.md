@@ -32,16 +32,6 @@ Buppy를 실행하기 위한 라이브러리를 설치합니다. 라이브러리
 poetry install
 ```
 
-### Google Cloud 사용자 인증
-
-`upload_companion.py` 스크립트를 사용하기 전에, 애플리케이션 기본 인증을 위해 Google Cloud 사용자 인증을 완료해야 합니다. Google Cloud SDK를 설치하고 다음 명령어를 사용하여 인증하세요:
-
-```
-gcloud auth application-default login
-```
-
-이 명령어는 기본 웹 브라우저를 열고 Google 계정으로 로그인하라는 요청을 합니다. 로그인을 완료하면 애플리케이션에서 필요한 인증 정보가 로컬 시스템에 저장되며, `upload_companion.py` 스크립트에서 해당 인증 정보를 사용할 수 있습니다. Google Cloud SDK에 대한 자세한 정보는 [여기](https://cloud.google.com/sdk/docs/install)에서 확인할 수 있습니다.
-
 ### config.ini 설정
 
 아래 설정 예제와 같이 `config.ini` 파일을 작성해 주세요:
@@ -97,6 +87,16 @@ temperature = 1
 system_prompt = "You are a helpful assistant."
 ```
 
+### Google Cloud 사용자 인증
+
+`streamlit_admin_app.py` 스크립트를 사용하기 전에, 애플리케이션 기본 인증을 위해 Google Cloud 사용자 인증을 완료해야 합니다. Google Cloud SDK를 설치하고 다음 명령어를 사용하여 인증하세요:
+
+```
+gcloud auth application-default login
+```
+
+이 명령어는 기본 웹 브라우저를 열고 Google 계정으로 로그인하라는 요청을 합니다. 로그인을 완료하면 애플리케이션에서 필요한 인증 정보가 로컬 시스템에 저장되며, `streamlit_admin_app.py` 스크립트에서 해당 인증 정보를 사용할 수 있습니다. Google Cloud SDK에 대한 자세한 정보는 [여기](https://cloud.google.com/sdk/docs/install)에서 확인할 수 있습니다.
+
 ## 실행 방법 🖥️
 
 ### 로컬에서의 실행
@@ -114,14 +114,6 @@ poetry run python main.py
 ```
 poetry run streamlit run streamlit_app.py
 ```
-
-#### `upload_companion.py` 스크립트 실행
-
-```
-poetry run python upload_companion.py path/to/config.ini
-```
-
-여기서 `path/to/config.ini`는 `config.ini` 파일의 경로를 나타냅니다. 이 스크립트는 Firestore에 Companion 및 Bot 데이터를 업로드하는 데 사용됩니다.
 
 ### Slack 봇 설정
 
