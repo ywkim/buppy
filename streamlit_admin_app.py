@@ -140,24 +140,6 @@ def format_prefix_messages_for_display(messages: list[dict[str, str]]) -> str:
     return output.getvalue().strip()
 
 
-def main():
-    """
-    The main function to run the Streamlit admin app.
-
-    This function sets up the Streamlit interface and handles user interactions
-    for administering chatbot configurations.
-    """
-    st.title("Admin")
-
-    admin_app = StreamlitAdminApp()
-
-    tab1, tab2 = st.tabs(["Companions", "Bots"])
-
-    with tab1:
-        handle_entity_tab(admin_app, EntityType.COMPANION)
-
-    with tab2:
-        handle_entity_tab(admin_app, EntityType.BOT)
 
 def proactive_task_panel(admin_app: StreamlitAdminApp, proactive_settings, bot_id: str):
     """Renders the proactive task management panel in Streamlit."""
@@ -353,6 +335,24 @@ def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
             f"{entity_type.name.capitalize()} '{entity_id_to_upload}' data updated successfully."
         )
 
+def main():
+    """
+    The main function to run the Streamlit admin app.
+
+    This function sets up the Streamlit interface and handles user interactions
+    for administering chatbot configurations.
+    """
+    st.title("Admin")
+
+    admin_app = StreamlitAdminApp()
+
+    tab1, tab2 = st.tabs(["Companions", "Bots"])
+
+    with tab1:
+        handle_entity_tab(admin_app, EntityType.COMPANION)
+
+    with tab2:
+        handle_entity_tab(admin_app, EntityType.BOT)
 
 if __name__ == "__main__":
     main()
