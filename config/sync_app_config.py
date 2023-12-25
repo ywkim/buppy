@@ -5,7 +5,6 @@ from abc import abstractmethod
 from enum import Enum
 
 from celery import Celery
-from google.api_core.exceptions import InvalidArgument
 from google.cloud import firestore
 
 from config.app_config import AppConfig
