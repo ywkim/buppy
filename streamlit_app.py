@@ -8,7 +8,8 @@ import streamlit as st
 from langchain.schema import AIMessage, BaseMessage, HumanMessage
 
 from config.app_config import AppConfig, init_chat_model
-from config.streamlit_config import EntityType, StreamlitAppConfig
+from config.streamlit_config import StreamlitAppConfig
+from config.sync_app_config import EntityType
 from utils.logging_utils import create_log_message
 from utils.message_utils import prepare_chat_messages
 

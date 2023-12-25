@@ -33,6 +33,7 @@ omgpt = "0.0.7"
 watchdog = "^3.0.0"
 mock-firestore = "^0.11.0"
 flower = "^2.0.1"
+types-pytz = "^2023.3.1.1"
 
 [tool.isort]
 multi_line_output = 3

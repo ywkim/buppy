@@ -190,7 +190,9 @@ def handle_proactive_task_tab(admin_app: StreamlitAdminApp):
 
     if selected_bot_id:
         existing_data = admin_app.get_entity_data(EntityType.BOT, selected_bot_id)
-        proactive_settings_data = existing_data.get("proactive_messaging", {})
+        proactive_settings_data: dict[str, Any] = existing_data.get(
+            "proactive_messaging", {}
+        )
         proactive_settings = ProactiveMessagingSettings(**proactive_settings_data)
 
         # Display current proactive settings in a user-friendly format
