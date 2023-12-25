@@ -115,6 +115,30 @@ poetry run python main.py
 poetry run streamlit run streamlit_app.py
 ```
 
+#### Celery 워커 설정 및 실행
+
+Buppy는 비동기 작업 처리를 위해 Celery 워커를 사용합니다. Celery 워커는 백그라운드에서 프로액티브 메시징 작업과 같은 비동기 작업을 처리합니다. 아래 단계를 따라 Celery 워커를 설정하고 실행하세요:
+
+1. **RabbitMQ 설치**: Celery 워커를 실행하기 전에 메시지 브로커인 RabbitMQ를 설치해야 합니다.
+
+2. **Celery 워커 실행**: 프로젝트의 루트 디렉토리에서 다음 명령을 사용하여 Celery 워커를 시작합니다. 이 명령은 Celery를 초기화하고, 연결된 RabbitMQ 서버에 대한 메시지 리스닝을 시작합니다.
+
+   ```bash
+   poetry run celery -A celery_app worker --loglevel=info
+   ```
+
+3. **로그 레벨 설정**: `--loglevel=info` 옵션은 Celery 로그의 상세 수준을 설정합니다. 개발 중에는 `info` 또는 `debug` 레벨이 유용할 수 있습니다.
+
+4. **Celery Flower로 모니터링(Optional)**: Celery 작업의 상태와 성능을 모니터링하기 위해, Celery Flower를 설치하고 실행할 수 있습니다.
+
+   ```bash
+   FLOWER_UNAUTHENTICATED_API=true poetry run celery -A celery_app flower
+   ```
+
+   Flower는 기본적으로 `http://localhost:5555`에서 호스팅됩니다.
+
+이 단계를 완료하면 Celery 워커가 성공적으로 설정되고 실행되며, Buppy 애플리케이션은 Celery를 통해 비동기 작업을 처리할 수 있습니다.
+
 ### Slack 봇 설정
 
 Buppy를 Slack에 추가하고 활용하기 위한 단계를 아래에 자세히 설명합니다. 이 과정은 두 가지 방법으로 수행할 수 있습니다: 수동 설정 또는 앱 매니페스트를 사용한 자동화된 설정
