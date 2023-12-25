@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import csv
 import logging
+from datetime import datetime
 from io import StringIO
 from typing import Any
 
+import pytz
 import streamlit as st
 
 from celery_tasks.proactive_messaging_task import (
@@ -150,14 +152,22 @@ def proactive_task_panel(
     """Renders the proactive task management panel in Streamlit."""
     # Retrieve current task info
     task_id = proactive_settings.current_task_id
-    scheduled_time = proactive_settings.last_scheduled
+    scheduled_time_utc = proactive_settings.last_scheduled
 
     if task_id:
-        # Display scheduled time in human-readable format
-        scheduled_time_str = (
-            scheduled_time.strftime("%Y-%m-%d %H:%M:%S") if scheduled_time else "N/A"
+        if scheduled_time_utc and scheduled_time_utc.tzinfo is None:
+            scheduled_time_utc = scheduled_time_utc.replace(tzinfo=pytz.utc)
+        # Convert UTC time to local time (e.g., KST)
+        kst = pytz.timezone("Asia/Seoul")
+        scheduled_time_local = (
+            scheduled_time_utc.astimezone(kst) if scheduled_time_utc else None
         )
-        st.text(f"Scheduled Time: {scheduled_time_str}")
+        scheduled_time_str = (
+            scheduled_time_local.strftime("%Y-%m-%d %H:%M:%S")
+            if scheduled_time_local
+            else "N/A"
+        )
+        st.text(f"Scheduled Time (KST): {scheduled_time_str}")
         if st.button("Cancel Current Task"):
             cancel_current_proactive_message_task(
                 bot_id, admin_app.celery_app, admin_app.db
@@ -269,7 +279,10 @@ def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
             proactive_interval_days = st.number_input(
                 "Interval Days",
                 min_value=0.0,
+                max_value=365.0,  # Maximum limit, adjust as needed
                 value=proactive_settings.get("interval_days", 0.0),
+                step=0.0001,
+                format="%.4f",
                 key="proactive_interval_days",
                 disabled=not proactive_editable,
             )
