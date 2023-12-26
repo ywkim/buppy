@@ -650,23 +650,6 @@ prompt-toolkit = ">=3.0.36"
 testing = ["pytest (>=7.2.1)", "pytest-cov (>=4.0.0)", "tox (>=4.4.3)"]
 
 [[package]]
-name = "cloudevents"
-version = "1.10.1"
-description = "CloudEvents Python SDK"
-optional = false
-python-versions = "*"
-files = [
-    {file = "cloudevents-1.10.1-py3-none-any.whl", hash = "sha256:832f1e3cca0887ab8f993cd2c0645a2155e73792f740d86f7b4bc8620a10d50e"},
-    {file = "cloudevents-1.10.1.tar.gz", hash = "sha256:984d90aa114deeb1c37ceecf78f9dc9d56f5866cf10b45142a23c84d22621ac9"},
-]
-
-[package.dependencies]
-deprecation = ">=2.0,<3.0"
-
-[package.extras]
-pydantic = ["pydantic (>=1.0.0,<3.0)"]
-
-[[package]]
 name = "cohere"
 version = "4.39"
 description = "Python SDK for the Cohere API"
@@ -721,20 +704,6 @@ files = [
 [package.dependencies]
 marshmallow = ">=3.18.0,<4.0.0"
 typing-inspect = ">=0.4.0,<1"
-
-[[package]]
-name = "deprecation"
-version = "2.1.0"
-description = "A library to handle automated deprecations"
-optional = false
-python-versions = "*"
-files = [
-    {file = "deprecation-2.1.0-py2.py3-none-any.whl", hash = "sha256:a10811591210e1fb0e768a8c25517cabeabcba6f0bf96564f8ff45189f90b14a"},
-    {file = "deprecation-2.1.0.tar.gz", hash = "sha256:72b3bde64e5d778694b0cf68178aed03d15e15477116add3fb773e581f9518ff"},
-]
-
-[package.dependencies]
-packaging = "*"
 
 [[package]]
 name = "dill"
@@ -836,29 +805,6 @@ files = [
 docs = ["furo (>=2023.9.10)", "sphinx (>=7.2.6)", "sphinx-autodoc-typehints (>=1.24)"]
 testing = ["covdefaults (>=2.3)", "coverage (>=7.3.2)", "diff-cover (>=8)", "pytest (>=7.4.3)", "pytest-cov (>=4.1)", "pytest-mock (>=3.12)", "pytest-timeout (>=2.2)"]
 typing = ["typing-extensions (>=4.8)"]
-
-[[package]]
-name = "flask"
-version = "3.0.0"
-description = "A simple framework for building complex web applications."
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "flask-3.0.0-py3-none-any.whl", hash = "sha256:21128f47e4e3b9d597a3e8521a329bf56909b690fcc3fa3e477725aa81367638"},
-    {file = "flask-3.0.0.tar.gz", hash = "sha256:cfadcdb638b609361d29ec22360d6070a77d7463dcb3ab08d2c2f2f168845f58"},
-]
-
-[package.dependencies]
-blinker = ">=1.6.2"
-click = ">=8.1.3"
-importlib-metadata = {version = ">=3.6.0", markers = "python_version < \"3.10\""}
-itsdangerous = ">=2.1.2"
-Jinja2 = ">=3.1.2"
-Werkzeug = ">=3.0.0"
-
-[package.extras]
-async = ["asgiref (>=3.2)"]
-dotenv = ["python-dotenv"]
 
 [[package]]
 name = "flower"
@@ -1111,21 +1057,6 @@ google-api-core = {version = ">=1.34.0,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-cloud-core = ">=1.4.1,<3.0.0dev"
 proto-plus = ">=1.22.0,<2.0.0dev"
 protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
-
-[[package]]
-name = "google-events"
-version = "0.11.0"
-description = "Google Cloudevents library"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "google-events-0.11.0.tar.gz", hash = "sha256:9a5de975daff308f49da2188cd503876723f0fc952afaabf243a1347e85ccdea"},
-    {file = "google_events-0.11.0-py3-none-any.whl", hash = "sha256:35e8393b3b81bfd5e01017f822dd7aadc4c700f6ec9f4eac2a4062a7f6113b68"},
-]
-
-[package.dependencies]
-proto-plus = ">=1.22.0"
-protobuf = ">=4.21.5"
 
 [[package]]
 name = "googleapis-common-protos"
@@ -1404,17 +1335,6 @@ files = [
 
 [package.extras]
 colors = ["colorama (>=0.4.6)"]
-
-[[package]]
-name = "itsdangerous"
-version = "2.1.2"
-description = "Safely pass data to untrusted environments and back."
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "itsdangerous-2.1.2-py3-none-any.whl", hash = "sha256:2c2349112351b88699d8d4b6b075022c0808887cb7ad10069318a8b0bc88db44"},
-    {file = "itsdangerous-2.1.2.tar.gz", hash = "sha256:5dbbc68b317e5e42f327f9021763545dc3fc3bfe22e6deb96aaf1fc38874156a"},
-]
 
 [[package]]
 name = "jinja2"
@@ -4216,23 +4136,6 @@ files = [
 ]
 
 [[package]]
-name = "werkzeug"
-version = "3.0.1"
-description = "The comprehensive WSGI web application library."
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "werkzeug-3.0.1-py3-none-any.whl", hash = "sha256:90a285dc0e42ad56b34e696398b8122ee4c681833fb35b8334a095d82c56da10"},
-    {file = "werkzeug-3.0.1.tar.gz", hash = "sha256:507e811ecea72b18a404947aded4b3390e1db8f826b494d76550ef45bb3b1dcc"},
-]
-
-[package.dependencies]
-MarkupSafe = ">=2.1.1"
-
-[package.extras]
-watchdog = ["watchdog (>=2.3)"]
-
-[[package]]
 name = "wrapt"
 version = "1.16.0"
 description = "Module for decorators, wrappers and monkey patching."
@@ -4432,4 +4335,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.6,<3.9.7"
-content-hash = "99720cbe4a7ce9c682af8266381343d8471ec7d213636d52d4e2caa2c7cb1710"
+content-hash = "ec41535fc29e3b310f5bacebda8c35cbdb32960374f3a534bf3fda2b6e6cd2b0"
