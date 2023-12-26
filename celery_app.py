@@ -1,5 +1,3 @@
-from celery import Celery
-
 from celery_tasks.proactive_messaging_task import create_proactive_message_task
 from config.celery_config import CeleryWorkerConfig
 
