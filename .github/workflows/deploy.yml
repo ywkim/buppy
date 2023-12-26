@@ -105,7 +105,7 @@ jobs:
 
     - name: Deploy Celery Worker
       run: |-
-        helm upgrade --install celery ./charts/celery \
+        helm upgrade --install celery-worker ./charts/celery \
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
           --set openaiOrganization=$OPENAI_ORGANIZATION \
