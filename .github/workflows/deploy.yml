@@ -101,7 +101,7 @@ jobs:
         helm upgrade --install rabbitmq bitnami/rabbitmq \
           --set auth.username=alola \
           --set auth.password=password \
-          --set auth.enableLoopbackUser=false
+          --set service.type=LoadBalancer
 
     - name: Deploy Celery Worker
       run: |-
