@@ -1,10 +1,12 @@
-# NodePort Service
+# Service Configuration
+# This configuration file defines a LoadBalancer service.
+
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "flower.fullname" . }}
 spec:
-  type: NodePort
+  type: LoadBalancer
   ports:
     - protocol: TCP
       port: 80
