@@ -101,17 +101,25 @@ jobs:
     - name: Deploy RabbitMQ with external access
       run: |-
         helm upgrade --install rabbitmq bitnami/rabbitmq \
+          --atomic \
+          --wait \
+          --timeout 20m0s \
           --set auth.username=alola \
           --set auth.password=password \
-          --set service.type=LoadBalancer
+          --set service.type=LoadBalancer \
+          --debug
 
     - name: Deploy Celery Worker
       run: |-
         helm upgrade --install celery-worker ./charts/celery \
+          --atomic \
+          --wait \
+          --timeout 20m0s \
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
           --set openaiOrganization=$OPENAI_ORGANIZATION \
-          --set brokerUrl=$BROKER_URL
+          --set brokerUrl=$BROKER_URL \
+          --debug
 
     # IMPORTANT: Service must be named something else than 'flower'.
     # Naming it simply 'flower' can lead to conflicts as detailed in this issue:
@@ -120,7 +128,11 @@ jobs:
     - name: Deploy Flower (Celery Monitoring Tool)
       run: |-
         helm upgrade --install celery-flower ./charts/flower \
+          --atomic \
+          --wait \
+          --timeout 20m0s \
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
           --set openaiOrganization=$OPENAI_ORGANIZATION \
-          --set brokerUrl=$BROKER_URL
+          --set brokerUrl=$BROKER_URL \
+          --debug
