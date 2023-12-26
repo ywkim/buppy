@@ -111,9 +111,13 @@ jobs:
           --set openaiOrganization=$OPENAI_ORGANIZATION \
           --set brokerUrl=$BROKER_URL
 
+    # IMPORTANT: Service must be named something else than 'flower'.
+    # Naming it simply 'flower' can lead to conflicts as detailed in this issue:
+    # https://github.com/mher/flower/issues/738#issuecomment-330606229
+    # To avoid such conflicts, the service is named 'celery-flower' instead.
     - name: Deploy Flower (Celery Monitoring Tool)
       run: |-
-        helm upgrade --install flower ./charts/flower \
+        helm upgrade --install celery-flower ./charts/flower \
           --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
           --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
           --set openaiOrganization=$OPENAI_ORGANIZATION \
