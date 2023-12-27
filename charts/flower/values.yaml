@@ -1,0 +1,6 @@
+# Default values for flower
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+env:
+  FLOWER_UNAUTHENTICATED_API: "true"

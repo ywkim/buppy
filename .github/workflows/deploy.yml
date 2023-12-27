@@ -14,6 +14,7 @@ env:
   GKE_ZONE: us-central1
   IMAGE: slack-bot
   OPENAI_ORGANIZATION: org-kJ1nkbOSvAO5nCTrJmY3Nm4x
+  BROKER_URL: amqp://alola:password@rabbitmq.default.svc.cluster.local:5672
 
 jobs:
   setup-build-publish-deploy:
@@ -91,3 +92,47 @@ jobs:
           --set slackBotUserId=U060YNQLWAJ \
           --debug
         kubectl get services -o wide -n u060ynqlwaj
+
+    - name: Set up Helm
+      run: |-
+        helm repo add bitnami https://charts.bitnami.com/bitnami
+        helm repo update
+
+    - name: Deploy RabbitMQ with external access
+      run: |-
+        helm upgrade --install rabbitmq bitnami/rabbitmq \
+          --atomic \
+          --wait \
+          --timeout 20m0s \
+          --set auth.username=alola \
+          --set auth.password=password \
+          --set service.type=LoadBalancer \
+          --debug
+
+    - name: Deploy Celery Worker
+      run: |-
+        helm upgrade --install celery-worker ./charts/celery \
+          --atomic \
+          --wait \
+          --timeout 20m0s \
+          --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
+          --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
+          --set openaiOrganization=$OPENAI_ORGANIZATION \
+          --set brokerUrl=$BROKER_URL \
+          --debug
+
+    # IMPORTANT: Service must be named something else than 'flower'.
+    # Naming it simply 'flower' can lead to conflicts as detailed in this issue:
+    # https://github.com/mher/flower/issues/738#issuecomment-330606229
+    # To avoid such conflicts, the service is named 'celery-flower' instead.
+    - name: Deploy Flower (Celery Monitoring Tool)
+      run: |-
+        helm upgrade --install celery-flower ./charts/flower \
+          --atomic \
+          --wait \
+          --timeout 20m0s \
+          --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
+          --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
+          --set openaiOrganization=$OPENAI_ORGANIZATION \
+          --set brokerUrl=$BROKER_URL \
+          --debug

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from abc import ABC, abstractmethod
 
 from google.cloud import firestore
 from langchain.chat_models import ChatOpenAI
 
+from config.loaders.firebase_loader import load_settings_from_firestore
 from config.settings.api_settings import APISettings
+from config.settings.celery_settings import CelerySettings
 from config.settings.core_settings import CoreSettings
 from config.settings.firebase_settings import FirebaseSettings
 from config.settings.langsmith_settings import LangSmithSettings
@@ -32,6 +35,7 @@ class AppConfig(ABC):
         self.firebase_settings = FirebaseSettings()
         self.langsmith_settings = LangSmithSettings()
         self.proactive_messaging_settings = ProactiveMessagingSettings()
+        self.celery_settings = CelerySettings()
 
     @property
     def vision_enabled(self) -> bool:
@@ -112,6 +116,55 @@ class AppConfig(ABC):
             )
 
         self.core_settings = CoreSettings(**settings_data)
+
+    def _apply_proactive_messaging_settings_from_bot(
+        self, bot_document: firestore.DocumentSnapshot
+    ) -> None:
+        """
+        Applies proactive messaging settings from the provided bot document snapshot.
+
+        This method extracts the proactive messaging settings from the Firestore
+        document snapshot of the bot and applies them to the current configuration.
+        It ensures that the proactive messaging feature and its related settings
+        (interval days, system prompt, and Slack channel) are configured according
+        to the bot's settings in Firestore.
+
+        Args:
+            bot_document (firestore.DocumentSnapshot): A snapshot of the Firestore
+                                                      document for the bot.
+        """
+        self.proactive_messaging_settings = load_settings_from_firestore(
+            ProactiveMessagingSettings, bot_document, "proactive_messaging"
+        )
+        logging.info("Proactive messaging settings applied from Firestore document.")
+
+    def _apply_slack_tokens_from_bot(
+        self, bot_document: firestore.DocumentSnapshot
+    ) -> None:
+        """
+        Applies the Slack bot and app tokens from the provided bot document snapshot.
+
+        Args:
+            bot_document (firestore.DocumentSnapshot): A snapshot of the Firestore document for the bot.
+        """
+        slack_bot_token = bot_document.get("slack_bot_token")
+        slack_app_token = bot_document.get("slack_app_token")
+
+        # Update API settings with fetched tokens
+        self.api_settings.slack_bot_token = slack_bot_token
+        self.api_settings.slack_app_token = slack_app_token
+
+    def _validate_and_apply_tokens(self):
+        # Ensure that the tokens are not None before assignment
+        if self.api_settings.slack_bot_token is not None:
+            self.bot_token = self.api_settings.slack_bot_token
+        else:
+            raise ValueError("Slack bot token is missing in API settings.")
+
+        if self.api_settings.slack_app_token is not None:
+            self.app_token = self.api_settings.slack_app_token
+        else:
+            raise ValueError("Slack app token is missing in API settings.")
 
     def _apply_langsmith_settings(self):
         """

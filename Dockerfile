@@ -1,4 +1,4 @@
-# Use an official Python 3.9 image
+# Use an official Python 3.8 image
 FROM python:3.8
 
 # Set the working directory in the docker container
