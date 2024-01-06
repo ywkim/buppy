@@ -340,24 +340,21 @@ async def fetch_user_info(user_id: str, client: AsyncWebClient) -> dict[str, str
         dict[str, str]: A dictionary containing the user's ID and the most appropriate name.
     """
     response = await client.users_info(user=user_id)
-    user_info = response['user']
+    user_info = response["user"]
 
     # Check which name is available and use it
-    name_type = 'display_name'
-    name = user_info['profile'].get('display_name')
+    name_type = "display_name"
+    name = user_info["profile"].get("display_name")
 
     if not name:
-        name = user_info['profile'].get('real_name')
-        name_type = 'real_name'
+        name = user_info["profile"].get("real_name")
+        name_type = "real_name"
 
     if not name:
-        name = user_info['name']
-        name_type = 'name'
+        name = user_info["name"]
+        name_type = "name"
 
-    return {
-        "user_id": user_info['id'],
-        name_type: name
-    }
+    return {"user_id": user_info["id"], name_type: name}
 
 
 async def format_messages(
