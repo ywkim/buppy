@@ -22,7 +22,7 @@ from slack_sdk.web.async_client import AsyncWebClient
 from config.app_config import AppConfig, init_chat_model
 from config.slack_config import SlackAppConfig
 from utils.logging_utils import create_log_message
-from utils.message_utils import prepare_chat_messages
+from utils.message_utils import create_json_message, prepare_chat_messages
 from utils.proactive_messaging_utils import (
     calculate_next_schedule_time,
     generate_and_send_proactive_message_async,
@@ -396,9 +396,9 @@ async def format_messages(
         if role == "user" and user_identification_enabled and text_content:
             if user_id:
                 user_info = await fetch_user_info(user_id, client)
-                text_content = json.dumps({"text": text_content, **user_info})
+                text_content = create_json_message(text_content, user_info)
             else:
-                text_content = json.dumps({"text": text_content})
+                text_content = create_json_message(text_content)
 
         # Append text content to message_content
         if text_content:

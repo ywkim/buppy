@@ -12,6 +12,25 @@ class InvalidRoleError(Exception):
     """Exception raised when an invalid role is encountered in message processing."""
 
 
+def create_json_message(
+    text_content: str, user_info: dict[str, str] | None = None
+) -> str:
+    """
+    Creates a JSON-formatted message string.
+
+    Args:
+        text_content (str): The text content of the message.
+        user_info (dict[str, str] | None): Optional user information to include in the message.
+
+    Returns:
+        str: A JSON-formatted string representing the message.
+    """
+    message_data = {"text": text_content}
+    if user_info:
+        message_data.update(user_info)
+    return json.dumps(message_data, ensure_ascii=False)
+
+
 def load_prefix_messages_from_file(
     file_path: str, app_config: AppConfig
 ) -> list[BaseMessage]:
@@ -41,7 +60,7 @@ def load_prefix_messages_from_file(
             role, content = row
             if role == "Human":
                 if user_identification_enabled:
-                    content = json.dumps({"text": content})
+                    content = create_json_message(content)
                 messages.append(HumanMessage(content=content))
             elif role == "AI":
                 messages.append(AIMessage(content=content))
@@ -80,7 +99,7 @@ def format_prefix_messages_content(
 
         if role.lower() == "user":
             if user_identification_enabled:
-                content = json.dumps({"text": content})
+                content = create_json_message(content)
             formatted_messages.append(HumanMessage(content=content))
         elif role.lower() == "system":
             formatted_messages.append(SystemMessage(content=content))
