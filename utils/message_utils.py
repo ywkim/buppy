@@ -118,7 +118,7 @@ def prepare_chat_messages(
     prefix_messages: list[BaseMessage] = []
 
     if message_file_path:
-        prefix_messages = load_prefix_messages_from_file(message_file_path)
+        prefix_messages = load_prefix_messages_from_file(message_file_path, app_config)
     elif prefix_messages_content:
         prefix_messages = format_prefix_messages_content(
             prefix_messages_content, app_config
