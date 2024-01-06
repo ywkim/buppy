@@ -195,6 +195,7 @@ class AppConfig(ABC):
             f"Chat Model: {self.core_settings.chat_model}\n"
             f"System Prompt: {self.core_settings.system_prompt}\n"
             f"Temperature: {self.core_settings.temperature}\n"
+            f"Frequency Penalty: {self.core_settings.frequency_penalty}\n"
             f"Vision Enabled: {'Yes' if self.vision_enabled else 'No'}"
         )
 
@@ -212,6 +213,9 @@ def init_chat_model(app_config: AppConfig) -> ChatOpenAI:
     chat = ChatOpenAI(
         model=app_config.core_settings.chat_model,
         temperature=app_config.core_settings.temperature,
+        model_kwargs={
+            "frequency_penalty": app_config.core_settings.frequency_penalty,
+        },
         openai_api_key=app_config.api_settings.openai_api_key,  # type: ignore
         openai_organization=app_config.api_settings.openai_organization,  # type: ignore
         max_tokens=MAX_TOKENS,

@@ -386,6 +386,16 @@ def handle_companion_settings(existing_data: dict[str, Any]) -> dict[str, Any]:
         value=existing_data.get("temperature", 1.0),
     )
 
+    # Prequency Penalty
+    tooltip_text = "빈도 페널티 설정: 양수값을 설정하면 텍스트의 반복을 줄이고, 다양성을 증가시킵니다."
+    frequency_penalty = st.number_input(
+        "Frequency Penalty",
+        min_value=-2.0,
+        max_value=2.0,
+        value=existing_data.get("frequency_penalty", 0.0),
+        help=tooltip_text,
+    )
+
     vision_enabled = existing_data.get("vision_enabled", False)
     st.checkbox("Vision Enabled", value=vision_enabled, disabled=True)
 
@@ -408,6 +418,7 @@ def handle_companion_settings(existing_data: dict[str, Any]) -> dict[str, Any]:
         "chat_model": chat_model,
         "system_prompt": system_prompt,
         "temperature": temperature,
+        "frequency_penalty": frequency_penalty,
         "vision_enabled": vision_enabled,
         "prefix_messages_content": edited_prefix_messages,
     }
