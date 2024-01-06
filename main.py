@@ -330,22 +330,34 @@ def is_valid_emoji_code(input_code: str) -> bool:
 
 async def fetch_user_info(user_id: str, client: AsyncWebClient) -> dict[str, str]:
     """
-    Fetches simplified user information, including the display name, from Slack's users.info API.
+    Fetches user information from Slack's users.info API, considering various name fields.
 
     Args:
         user_id (str): The user ID for which to fetch information.
         client (AsyncWebClient): The AsyncWebClient instance for Slack API calls.
 
     Returns:
-        dict[str, str]: A dictionary containing the user's ID and display name.
+        dict[str, str]: A dictionary containing the user's ID and the most appropriate name.
     """
     response = await client.users_info(user=user_id)
-    user_info = response["user"]
+    user_info = response['user']
 
-    # Use 'display_name' if available, otherwise fall back to 'name'
-    display_name = user_info["profile"].get("display_name", user_info["name"])
+    # Check which name is available and use it
+    name_type = 'display_name'
+    name = user_info['profile'].get('display_name')
 
-    return {"user_id": user_info["id"], "display_name": display_name}
+    if not name:
+        name = user_info['profile'].get('real_name')
+        name_type = 'real_name'
+
+    if not name:
+        name = user_info['name']
+        name_type = 'name'
+
+    return {
+        "user_id": user_info['id'],
+        name_type: name
+    }
 
 
 async def format_messages(
