@@ -352,13 +352,16 @@ async def format_messages(
     formatted_messages: list[BaseMessage] = []
 
     for msg in thread_messages:
-        role = "assistant" if msg.get("user") == bot_user_id else "user"
+        user_id = msg.get("user")
+        role = "assistant" if user_id == bot_user_id else "user"
         text_content = msg.get("text", "").replace(f"<@{bot_user_id}>", "").strip()
         message_content: list[str | dict[str, Any]] = []
 
         # Append text content to message_content
         if text_content:
-            message_content.append({"type": "text", "text": text_content})
+            message_content.append(
+                {"type": "text", "text": f"{user_id}: {text_content}"}
+            )
 
         if app_config.vision_enabled:
             image_url = extract_image_url(msg)
