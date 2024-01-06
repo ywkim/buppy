@@ -387,11 +387,13 @@ def handle_companion_settings(existing_data: dict[str, Any]) -> dict[str, Any]:
     )
 
     # Prequency Penalty
+    tooltip_text = "빈도 페널티 설정: 양수값을 설정하면 텍스트의 반복을 줄이고, 다양성을 증가시킵니다."
     frequency_penalty = st.number_input(
         "Frequency Penalty",
         min_value=-2.0,
         max_value=2.0,
         value=existing_data.get("frequency_penalty", 0.0),
+        help=tooltip_text,
     )
 
     vision_enabled = existing_data.get("vision_enabled", False)
