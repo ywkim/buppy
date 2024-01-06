@@ -390,10 +390,6 @@ async def format_messages(
             text_dict = {"type": "text", "text": text_content}
             message_content.append(text_dict)
 
-        if role == "user" and user_identification_enabled:
-            user_info = await fetch_user_info(msg.get("user"), app_config.bot_token)
-            message_content.append(json.dumps(user_info))
-
         if app_config.vision_enabled:
             image_url = extract_image_url(msg)
             if image_url:
