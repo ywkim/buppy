@@ -394,8 +394,11 @@ async def format_messages(
         text_content = msg.get("text", "").replace(f"<@{bot_user_id}>", "").strip()
 
         if role == "user" and user_identification_enabled and text_content:
-            user_info = await fetch_user_info(msg.get("user"), client)
-            text_content = json.dumps({"text": text_content, **user_info})
+            if user_id:
+                user_info = await fetch_user_info(user_id, client)
+                text_content = json.dumps({"text": text_content, **user_info})
+            else:
+                text_content = json.dumps({"text": text_content})
 
         # Append text content to message_content
         if text_content:

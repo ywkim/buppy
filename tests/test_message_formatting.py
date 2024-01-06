@@ -47,7 +47,12 @@ class TestMessageFormatting(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsInstance(result[0], HumanMessage)
         self.assertIsInstance(result[1], AIMessage)
-        self.assertIn("testuser", result[0].content[0]["text"])
+        first_message_content = result[0].content[0]
+        if isinstance(first_message_content, dict):
+            self.assertIn("text", first_message_content)
+            self.assertIn("testuser", first_message_content["text"])
+        else:
+            self.fail("First content item is not a dictionary.")
 
     async def test_format_messages_with_user_identification_disabled(self) -> None:
         """Test format_messages function with user identification disabled."""
@@ -77,7 +82,11 @@ class TestMessageFormatting(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(result[0], AIMessage)
         self.assertIsInstance(result[1], HumanMessage)
         self.assertEqual(result[0].content, "Hello there!")
-        self.assertEqual(result[1].content[0]["text"], "Hi!")
+        second_message_content = result[1].content[0]
+        if isinstance(second_message_content, dict):
+            self.assertEqual(second_message_content.get("text"), "Hi!")
+        else:
+            self.fail("Second content item is not a dictionary.")
 
 
 if __name__ == "__main__":
