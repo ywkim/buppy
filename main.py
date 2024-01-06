@@ -328,20 +328,41 @@ def is_valid_emoji_code(input_code: str) -> bool:
     return input_code in emoji_data_python.emoji_short_names
 
 
+async def fetch_user_info(user_id: str, client: AsyncWebClient) -> dict[str, str]:
+    """
+    Fetches simplified user information from Slack's users.info API.
+
+    Args:
+        user_id (str): The user ID for which to fetch information.
+        client (AsyncWebClient): The AsyncWebClient instance for Slack API calls.
+
+    Returns:
+        dict[str, str]: A dictionary containing simplified user information.
+    """
+    try:
+        response = await client.users_info(user=user_id)
+        user_info = response["user"]
+        return {"user_id": user_info["id"], "username": user_info["name"]}
+    except Exception as e:
+        logging.error("Failed to fetch user info: %s", e)
+        return {}
+
+
 async def format_messages(
     thread_messages: list[dict[str, Any]], bot_user_id: str, app_config: SlackAppConfig
 ) -> list[BaseMessage]:
     """
-    Formats messages from a Slack thread into a list of HumanMessage objects,
-    downloading and encoding images as Base64 if enabled in the AppConfig.
+    Formats messages from a Slack thread into a list of BaseMessage objects,
+    downloading and encoding images as Base64 if enabled in the AppConfig,
+    and including simplified user information if UserIdentification is enabled.
 
     Args:
-    thread_messages (list[dict[str, Any]]): list of messages from the Slack thread.
-    bot_user_id (str): The user ID of the bot.
-    app_config (AppConfig): The application configuration object.
+        thread_messages (list[dict[str, Any]]): List of messages from the Slack thread.
+        bot_user_id (str): The user ID of the bot.
+        app_config (AppConfig): The application configuration object.
 
     Returns:
-    list[BaseMessage]: A list of formatted HumanMessage objects.
+        list[BaseMessage]: A list of formatted BaseMessage objects.
     """
     # Check if the messages are sorted in ascending order by 'ts'
     assert all(
@@ -350,18 +371,28 @@ async def format_messages(
     ), "Messages are not sorted in ascending order."
 
     formatted_messages: list[BaseMessage] = []
+    user_identification_enabled = app_config.user_identification_settings.enabled
+    slack_client = AsyncWebClient(token=app_config.bot_token)
 
     for msg in thread_messages:
         user_id = msg.get("user")
         role = "assistant" if user_id == bot_user_id else "user"
-        text_content = msg.get("text", "").replace(f"<@{bot_user_id}>", "").strip()
         message_content: list[str | dict[str, Any]] = []
+
+        text_content = msg.get("text", "").replace(f"<@{bot_user_id}>", "").strip()
+
+        if role == "user" and user_identification_enabled and text_content:
+            user_info = await fetch_user_info(msg.get("user"), slack_client)
+            text_content = json.dumps({"text": text_content, **user_info})
 
         # Append text content to message_content
         if text_content:
-            message_content.append(
-                {"type": "text", "text": f"{user_id}: {text_content}"}
-            )
+            text_dict = {"type": "text", "text": text_content}
+            message_content.append(text_dict)
+
+        if role == "user" and user_identification_enabled:
+            user_info = await fetch_user_info(msg.get("user"), app_config.bot_token)
+            message_content.append(json.dumps(user_info))
 
         if app_config.vision_enabled:
             image_url = extract_image_url(msg)
