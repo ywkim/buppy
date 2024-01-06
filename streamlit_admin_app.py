@@ -291,6 +291,13 @@ def handle_bot_settings(
         "Select Companion ID", options=companion_ids, index=companion_id_index
     )
 
+    # User Identification Settings UI
+    user_identification_enabled = st.checkbox(
+        "User Identification Enabled",
+        value=existing_data.get("user_identification", {}).get("enabled", False),
+        help="사용자 식별 기능을 활성화하려면 이 옵션을 선택하세요. 이 기능은 사용자의 고유 식별 정보를 사용하여 각 사용자의 메시지를 구분합니다.",
+    )
+
     # Proactive Messaging Settings
     proactive_settings = existing_data.get("proactive_messaging", {})
     proactive_enabled = st.checkbox(
@@ -348,6 +355,7 @@ def handle_bot_settings(
         }
         if proactive_enabled
         else {"enabled": False},
+        "user_identification": {"enabled": user_identification_enabled},
     }
 
     return entity_data

@@ -12,6 +12,7 @@ from config.settings.core_settings import CoreSettings
 from config.settings.firebase_settings import FirebaseSettings
 from config.settings.langsmith_settings import LangSmithSettings
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
+from config.settings.user_identification_settings import UserIdentificationSettings
 
 
 class SlackAppConfig(AppConfig):
@@ -43,6 +44,9 @@ class SlackAppConfig(AppConfig):
         )
         self.langsmith_settings = load_settings_from_ini_section(
             LangSmithSettings, config_file, "langsmith"
+        )
+        self.user_identification_settings = load_settings_from_ini_section(
+            UserIdentificationSettings, config_file, "user_identification"
         )
         logging.info("Configuration loaded from file %s", config_file)
 
@@ -80,6 +84,7 @@ class SlackAppConfig(AppConfig):
 
         self._apply_proactive_messaging_settings_from_bot(bot)
         self._apply_slack_tokens_from_bot(bot)
+        self._apply_user_identification_settings_from_bot(bot)
 
         self._validate_and_apply_tokens()
 

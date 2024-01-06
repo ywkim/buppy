@@ -67,6 +67,7 @@ class SyncAppConfig(AppConfig):
         if entity_type == EntityType.BOT:
             self._apply_proactive_messaging_settings_from_bot(entity)
             self._apply_slack_tokens_from_bot(entity)
+            self._apply_user_identification_settings_from_bot(entity)
 
             self._validate_and_apply_tokens()
 

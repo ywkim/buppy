@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import mock_open, patch
 
+from config.slack_config import SlackAppConfig
 from streamlit_app import format_messages
 from utils.message_utils import InvalidRoleError, load_prefix_messages_from_file
 
@@ -28,7 +29,8 @@ class TestMessageUtils(unittest.TestCase):
             new_callable=mock_open,
             read_data="AI,Hello\nHuman,Hi",
         ) as mock_file:
-            result = load_prefix_messages_from_file(valid_file_path)
+            app_config = SlackAppConfig()
+            result = load_prefix_messages_from_file(valid_file_path, app_config)
             mock_file.assert_called_with(valid_file_path, "r", encoding="utf-8")
             self.assertEqual(len(result), 2)
 
@@ -42,7 +44,8 @@ class TestMessageUtils(unittest.TestCase):
             read_data="Invalid,Hello",
         ):
             with self.assertRaises(InvalidRoleError):
-                load_prefix_messages_from_file(invalid_file_path)
+                app_config = SlackAppConfig()
+                load_prefix_messages_from_file(invalid_file_path, app_config)
 
     # Additional tests can be added for other utility functions and components
 

@@ -241,7 +241,7 @@ def register_events_and_commands(app: AsyncApp, app_config: SlackAppConfig) -> N
                 )
 
                 formatted_messages = await format_messages(
-                    thread_messages, bot_user_id, app_config
+                    thread_messages, bot_user_id, app_config, client
                 )
                 logger.info(
                     create_log_message(
@@ -328,20 +328,54 @@ def is_valid_emoji_code(input_code: str) -> bool:
     return input_code in emoji_data_python.emoji_short_names
 
 
-async def format_messages(
-    thread_messages: list[dict[str, Any]], bot_user_id: str, app_config: SlackAppConfig
-) -> list[BaseMessage]:
+async def fetch_user_info(user_id: str, client: AsyncWebClient) -> dict[str, str]:
     """
-    Formats messages from a Slack thread into a list of HumanMessage objects,
-    downloading and encoding images as Base64 if enabled in the AppConfig.
+    Fetches user information from Slack's users.info API, considering various name fields.
 
     Args:
-    thread_messages (list[dict[str, Any]]): list of messages from the Slack thread.
-    bot_user_id (str): The user ID of the bot.
-    app_config (AppConfig): The application configuration object.
+        user_id (str): The user ID for which to fetch information.
+        client (AsyncWebClient): The AsyncWebClient instance for Slack API calls.
 
     Returns:
-    list[BaseMessage]: A list of formatted HumanMessage objects.
+        dict[str, str]: A dictionary containing the user's ID and the most appropriate name.
+    """
+    response = await client.users_info(user=user_id)
+    user_info = response["user"]
+
+    # Check which name is available and use it
+    name_type = "display_name"
+    name = user_info["profile"].get("display_name")
+
+    if not name:
+        name = user_info["profile"].get("real_name")
+        name_type = "real_name"
+
+    if not name:
+        name = user_info["name"]
+        name_type = "name"
+
+    return {"user_id": user_info["id"], name_type: name}
+
+
+async def format_messages(
+    thread_messages: list[dict[str, Any]],
+    bot_user_id: str,
+    app_config: SlackAppConfig,
+    client: AsyncWebClient,
+) -> list[BaseMessage]:
+    """
+    Formats messages from a Slack thread into a list of BaseMessage objects,
+    downloading and encoding images as Base64 if enabled in the AppConfig,
+    and including simplified user information if UserIdentification is enabled.
+
+    Args:
+        thread_messages (list[dict[str, Any]]): List of messages from the Slack thread.
+        bot_user_id (str): The user ID of the bot.
+        app_config (AppConfig): The application configuration object.
+        client (AsyncWebClient): The AsyncWebClient instance for Slack API calls.
+
+    Returns:
+        list[BaseMessage]: A list of formatted BaseMessage objects.
     """
     # Check if the messages are sorted in ascending order by 'ts'
     assert all(
@@ -350,15 +384,26 @@ async def format_messages(
     ), "Messages are not sorted in ascending order."
 
     formatted_messages: list[BaseMessage] = []
+    user_identification_enabled = app_config.user_identification_settings.enabled
 
     for msg in thread_messages:
-        role = "assistant" if msg.get("user") == bot_user_id else "user"
-        text_content = msg.get("text", "").replace(f"<@{bot_user_id}>", "").strip()
+        user_id = msg.get("user")
+        role = "assistant" if user_id == bot_user_id else "user"
         message_content: list[str | dict[str, Any]] = []
+
+        text_content = msg.get("text", "").replace(f"<@{bot_user_id}>", "").strip()
+
+        if role == "user" and user_identification_enabled and text_content:
+            if user_id:
+                user_info = await fetch_user_info(user_id, client)
+                text_content = json.dumps({"text": text_content, **user_info})
+            else:
+                text_content = json.dumps({"text": text_content})
 
         # Append text content to message_content
         if text_content:
-            message_content.append({"type": "text", "text": text_content})
+            text_dict = {"type": "text", "text": text_content}
+            message_content.append(text_dict)
 
         if app_config.vision_enabled:
             image_url = extract_image_url(msg)
