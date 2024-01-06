@@ -33,7 +33,13 @@ class TestMessageFormatting(unittest.IsolatedAsyncioTestCase):
 
         async_client = AsyncMock()
         async_client.users_info = AsyncMock(
-            return_value={"user": {"id": "U123ABC", "name": "testuser"}}
+            return_value={
+                "user": {
+                    "id": "U123ABC",
+                    "name": "testuser",
+                    "profile": {"display_name": "displaytestuser"},
+                }
+            }
         )
 
         result = await format_messages(
