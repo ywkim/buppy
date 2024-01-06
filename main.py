@@ -241,7 +241,7 @@ def register_events_and_commands(app: AsyncApp, app_config: SlackAppConfig) -> N
                 )
 
                 formatted_messages = await format_messages(
-                    thread_messages, bot_user_id, app_config
+                    thread_messages, bot_user_id, app_config, client
                 )
                 logger.info(
                     create_log_message(
@@ -349,7 +349,10 @@ async def fetch_user_info(user_id: str, client: AsyncWebClient) -> dict[str, str
 
 
 async def format_messages(
-    thread_messages: list[dict[str, Any]], bot_user_id: str, app_config: SlackAppConfig
+    thread_messages: list[dict[str, Any]],
+    bot_user_id: str,
+    app_config: SlackAppConfig,
+    client: AsyncWebClient,
 ) -> list[BaseMessage]:
     """
     Formats messages from a Slack thread into a list of BaseMessage objects,
@@ -360,6 +363,7 @@ async def format_messages(
         thread_messages (list[dict[str, Any]]): List of messages from the Slack thread.
         bot_user_id (str): The user ID of the bot.
         app_config (AppConfig): The application configuration object.
+        client (AsyncWebClient): The AsyncWebClient instance for Slack API calls.
 
     Returns:
         list[BaseMessage]: A list of formatted BaseMessage objects.
@@ -372,7 +376,6 @@ async def format_messages(
 
     formatted_messages: list[BaseMessage] = []
     user_identification_enabled = app_config.user_identification_settings.enabled
-    slack_client = AsyncWebClient(token=app_config.bot_token)
 
     for msg in thread_messages:
         user_id = msg.get("user")

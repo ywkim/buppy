@@ -15,6 +15,7 @@ from config.settings.core_settings import CoreSettings
 from config.settings.firebase_settings import FirebaseSettings
 from config.settings.langsmith_settings import LangSmithSettings
 from config.settings.proactive_messaging_settings import ProactiveMessagingSettings
+from config.settings.user_identification_settings import UserIdentificationSettings
 
 MAX_TOKENS = 1023
 
@@ -36,6 +37,7 @@ class AppConfig(ABC):
         self.langsmith_settings = LangSmithSettings()
         self.proactive_messaging_settings = ProactiveMessagingSettings()
         self.celery_settings = CelerySettings()
+        self.user_identification_settings = UserIdentificationSettings()
 
     @property
     def vision_enabled(self) -> bool:
@@ -153,6 +155,21 @@ class AppConfig(ABC):
         # Update API settings with fetched tokens
         self.api_settings.slack_bot_token = slack_bot_token
         self.api_settings.slack_app_token = slack_app_token
+
+    def _apply_user_identification_settings_from_bot(
+        self, bot_document: firestore.DocumentSnapshot
+    ) -> None:
+        """
+        Applies user identification settings from the provided bot document snapshot.
+
+        Args:
+            bot_document (firestore.DocumentSnapshot): A snapshot of the Firestore
+                                                      document for the bot.
+        """
+        self.user_identification_settings = load_settings_from_firestore(
+            UserIdentificationSettings, bot_document, "user_identification"
+        )
+        logging.info("User identification settings applied from Firestore document.")
 
     def _validate_and_apply_tokens(self):
         # Ensure that the tokens are not None before assignment

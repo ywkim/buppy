@@ -46,27 +46,34 @@ def load_prefix_messages_from_file(file_path: str) -> list[BaseMessage]:
     return messages
 
 
-def format_prefix_messages_content(prefix_messages_json: str) -> list[BaseMessage]:
+def format_prefix_messages_content(
+    prefix_messages_json: str, app_config: AppConfig
+) -> list[BaseMessage]:
     """
-    Format prefix messages content from json string to BaseMessage objects
+    Format prefix messages content from json string to BaseMessage objects. If UserIdentification
+    is enabled, additional user information is fetched and included.
 
     Args:
-        prefix_messages_json (str): JSON string with prefix messages content
+        prefix_messages_json (str): JSON string with prefix messages content.
+        app_config (AppConfig): The application configuration object.
 
     Returns:
-        list[BaseMessage]: list of BaseMessage instances
+        list[BaseMessage]: list of BaseMessage instances.
 
     Raises:
         InvalidRoleError: If the role in the content isn't 'assistant', 'user', or 'system'.
     """
     prefix_messages = json.loads(prefix_messages_json)
     formatted_messages: list[BaseMessage] = []
+    user_identification_enabled = app_config.user_identification_settings.enabled
 
     for msg in prefix_messages:
         role = msg["role"]
         content = msg["content"]
 
         if role.lower() == "user":
+            if user_identification_enabled:
+                content = json.dumps({"text": content})
             formatted_messages.append(HumanMessage(content=content))
         elif role.lower() == "system":
             formatted_messages.append(SystemMessage(content=content))
@@ -106,7 +113,9 @@ def prepare_chat_messages(
     if message_file_path:
         prefix_messages = load_prefix_messages_from_file(message_file_path)
     elif prefix_messages_content:
-        prefix_messages = format_prefix_messages_content(prefix_messages_content)
+        prefix_messages = format_prefix_messages_content(
+            prefix_messages_content, app_config
+        )
 
     # Appending prefix messages before the main conversation
     return [system_prompt, *prefix_messages, *formatted_messages]
