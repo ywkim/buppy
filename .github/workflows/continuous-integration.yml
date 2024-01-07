@@ -26,22 +26,13 @@ jobs:
         poetry install
 
     - name: Lint with Pylint
-      run: |
-        poetry run pylint --recursive=y main.py streamlit_app.py streamlit_admin_app.py celery_app.py tests config utils celery_tasks
+      run: make lint
 
     - name: Check Code Style with isort and black
-      run: |
-        poetry run isort --check-only --diff .
-        poetry run black --check .
+      run: make code-style
 
-    - name: Type Check with Mypy
-      run: |
-        poetry run mypy --check-untyped-defs .
-
-    - name: Type Check with Pyright
-      run: |
-        poetry run pyright
+    - name: Type Check with Mypy and Pyright
+      run: make type-check
 
     - name: Run Unit Tests
-      run: |
-        poetry run python -m unittest discover -s tests
+      run: make test
