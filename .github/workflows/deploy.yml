@@ -93,6 +93,22 @@ jobs:
           --debug
         kubectl get services -o wide -n u060ynqlwaj
 
+    - name: Deploy bot ID U06A2DWHFPD
+      run: |-
+        helm upgrade slack-bot ./charts/bot \
+          --install \
+          --atomic \
+          --wait \
+          --namespace u06a2dwhfpd \
+          --create-namespace \
+          --timeout 20m0s \
+          --set image=gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA \
+          --set openaiApiKey=${{ secrets.OPENAI_API_KEY }} \
+          --set openaiOrganization=$OPENAI_ORGANIZATION \
+          --set slackBotUserId=U06A2DWHFPD \
+          --debug
+        kubectl get services -o wide -n u06a2dwhfpd
+
     - name: Set up Helm
       run: |-
         helm repo add bitnami https://charts.bitnami.com/bitnami
