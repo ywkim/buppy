@@ -295,12 +295,17 @@ def handle_bot_settings(
     )
 
     # Button to retrieve the bot ID using the provided token
-    if slack_bot_token and st.button("Retrieve Bot ID"):
-        try:
-            bot_user_id = retrieve_bot_user_id(slack_bot_token)
-            st.success(f"Bot ID retrieved successfully: {bot_user_id}")
-        except SlackApiError:
-            st.error("Error retrieving bot ID. Please check the token and try again.")
+    if slack_bot_token:
+        if st.button("Retrieve Bot ID"):
+            try:
+                bot_user_id = retrieve_bot_user_id(slack_bot_token)
+                st.success(f"Bot ID retrieved successfully: {bot_user_id}")
+            except SlackApiError:
+                st.error(
+                    "Error retrieving bot ID. Please check the token and try again."
+                )
+    else:
+        st.caption("Please enter your Slack bot token to retrieve the Bot ID.")
 
     slack_app_token = st.text_input(
         "Slack App Token", value=existing_data.get("slack_app_token", "")
