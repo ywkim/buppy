@@ -7,6 +7,8 @@ from typing import Any
 
 import pytz
 import streamlit as st
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
 from celery_tasks.proactive_messaging_task import (
     cancel_current_proactive_message_task,
@@ -143,6 +145,20 @@ def format_prefix_messages_for_display(messages: list[dict[str, str]]) -> str:
     return output.getvalue().strip()
 
 
+def retrieve_bot_user_id(bot_token: str) -> str:
+    """Retrieve the Slack bot user ID using the provided bot token.
+
+    Args:
+        bot_token (str): The Slack bot token.
+
+    Returns:
+        str: The retrieved Slack bot user ID.
+    """
+    client = WebClient(token=bot_token)
+    response = client.auth_test()
+    return response["user_id"]
+
+
 def proactive_task_panel(
     admin_app: StreamlitAdminApp,
     proactive_settings: ProactiveMessagingSettings,
@@ -276,6 +292,20 @@ def handle_bot_settings(
     slack_bot_token = st.text_input(
         "Slack Bot Token", value=existing_data.get("slack_bot_token", "")
     )
+
+    # Button to retrieve the bot ID using the provided token
+    if slack_bot_token:
+        if st.button("Retrieve Bot ID"):
+            try:
+                bot_user_id = retrieve_bot_user_id(slack_bot_token)
+                st.success(f"Bot ID retrieved successfully: {bot_user_id}")
+            except SlackApiError:
+                st.error(
+                    "Error retrieving bot ID. Please check the token and try again."
+                )
+    else:
+        st.caption("Please enter your Slack bot token to retrieve the Bot ID.")
+
     slack_app_token = st.text_input(
         "Slack App Token", value=existing_data.get("slack_app_token", "")
     )
