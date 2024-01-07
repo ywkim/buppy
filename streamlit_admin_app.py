@@ -6,7 +6,6 @@ from io import StringIO
 from typing import Any
 
 import pytz
-import requests
 import streamlit as st
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
