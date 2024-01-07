@@ -4,11 +4,12 @@ import csv
 import logging
 from io import StringIO
 from typing import Any
-import requests
-import streamlit as st
 
 import pytz
+import requests
 import streamlit as st
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
 from celery_tasks.proactive_messaging_task import (
     cancel_current_proactive_message_task,
@@ -144,6 +145,7 @@ def format_prefix_messages_for_display(messages: list[dict[str, str]]) -> str:
 
     return output.getvalue().strip()
 
+
 def retrieve_bot_user_id(bot_token: str) -> str:
     """Retrieve the Slack bot user ID using the provided bot token.
 
@@ -152,19 +154,11 @@ def retrieve_bot_user_id(bot_token: str) -> str:
 
     Returns:
         str: The retrieved Slack bot user ID.
-
-    Raises:
-        StreamlitAPIException: If the Slack API call fails.
-        Exception: For any other errors during the process.
     """
-    slack_auth_url = "https://slack.com/api/auth.test"
-    headers = {"Authorization": f"Bearer {bot_token}"}
-    response = requests.post(slack_auth_url, headers=headers)
+    client = WebClient(token=bot_token)
+    response = client.auth_test()
+    return response["user_id"]
 
-    if response.status_code != 200 or not response.json().get("ok"):
-        raise StreamlitAPIException(f"Slack API error: {response.json().get('error')}")
-
-    return response.json()["user_id"]
 
 def proactive_task_panel(
     admin_app: StreamlitAdminApp,
@@ -282,7 +276,9 @@ def handle_entity_tab(admin_app: StreamlitAdminApp, entity_type: EntityType):
         )
 
 
-def handle_bot_settings(existing_data: dict[str, Any], admin_app: StreamlitAdminApp) -> dict[str, Any]:
+def handle_bot_settings(
+    existing_data: dict[str, Any], admin_app: StreamlitAdminApp
+) -> dict[str, Any]:
     """
     Handles the UI components specific to the Bot entity.
 
@@ -294,18 +290,17 @@ def handle_bot_settings(existing_data: dict[str, Any], admin_app: StreamlitAdmin
         The updated bot entity data.
     """
     # Bot-specific UI
-    slack_bot_token = st.text_input("Slack Bot Token", value=existing_data.get("slack_bot_token", ""))
+    slack_bot_token = st.text_input(
+        "Slack Bot Token", value=existing_data.get("slack_bot_token", "")
+    )
 
     # Button to retrieve the bot ID using the provided token
     if slack_bot_token and st.button("Retrieve Bot ID"):
         try:
             bot_user_id = retrieve_bot_user_id(slack_bot_token)
             st.success(f"Bot ID retrieved successfully: {bot_user_id}")
-        except StreamlitAPIException as e:
-            st.error(f"Error retrieving bot ID: {str(e)}")
-        except Exception as e:
-            logging.error("Failed to retrieve bot user ID: %s", e)
-            st.error("Unexpected error occurred while retrieving bot ID.")
+        except SlackApiError:
+            st.error("Error retrieving bot ID. Please check the token and try again.")
 
     slack_app_token = st.text_input(
         "Slack App Token", value=existing_data.get("slack_app_token", "")
